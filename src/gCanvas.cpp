@@ -2,7 +2,7 @@
  * gCanvas.cpp
  *
  *  Created on: September 17, 2024
- *      Author: Kadir Semih Arslan
+ *      Author: Kadir Semih Arslan, Mehmet Furkan Utlu
  */
 
 
@@ -17,6 +17,7 @@ gCanvas::~gCanvas() {
 }
 
 void gCanvas::setup() {
+	setupGame();
 	setupBackground();
 	setupPlayer();
 	setupGold();
@@ -24,16 +25,8 @@ void gCanvas::setup() {
 	setupPanel();
 	setupBullet();
 	setupEnemy();
-	setupGameButtons();
 
-	// For control purpose.
-//	enemyx = 1000;
-//	enemyy = player.y;
-//	enemyw = player.w;
-//	enemyh = player.h;
-//	canenemyshoot = true;
-//	enemycd = 2;
-//	enemytimer = 0;
+	setupGameButtons();
 }
 
 void gCanvas::update() {
@@ -44,14 +37,6 @@ void gCanvas::update() {
 	updateBullet();
 	generateEnemy();
 	updateEnemy();
-	// For control purpose.
-//	if(!canenemyshoot) {
-//		canenemyshoot = cooldown(enemycd, enemytimer);
-//	}
-//	else {
-//		generateBullet(enemyx, enemyy, enemyw, enemyh, OWNER_ENEMY);
-//		canenemyshoot = false;
-//	}
 }
 
 void gCanvas::draw() {
@@ -62,26 +47,19 @@ void gCanvas::draw() {
 	drawPanel();
 	drawBullet();
 	drawEnemy();
-	drawGameButtons();
 
-	// For control purpose.
-//	gDrawRectangle(enemyx, enemyy, enemyw, enemyh);
+	drawGameButtons();
 }
 
 void gCanvas::keyPressed(int key) {
 //	gLogi("gCanvas") << "keyPressed:" << key;
 //	gLogi("Key ") << std::to_string(key);
-	if(key == 71) {
-		generateGold(50, 50, 50, 50);
-	}
-	if(key == 70) {
-	}
 	if(key == 32) {
 //		player.ishit = !player.ishit;
 //		generateExplosion(player.x, player.y, 128, 128);
-		if(player.shootkey){
-			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER);
-			player.shootkey = false;
+		if(player.canshoot){
+			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER);
+			player.canshoot = false;
 		}
 	}
 	if(key == 87) {
@@ -145,6 +123,12 @@ void gCanvas::mousePressed(int x, int y, int button) {
 					case BUTTON_DOWN:
 						player.downkey = true;
 						break;
+					case BUTTON_FIRE:
+						if(player.canshoot){
+							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER);
+							player.canshoot = false;
+						}
+						break;
 				}
 				gamebutton[i].pressed = true;
 			}
@@ -202,6 +186,13 @@ void gCanvas::hideNotify() {
 
 }
 
+void gCanvas::setupGame() {
+	mapleft = 0;
+	mapright = getWidth();
+	maptop = 0;
+	mapbottom = getHeight();
+}
+
 void gCanvas::setupBackground() {
 	backgroundimage.loadImage("city_1.png");
 	background[0].w = backgroundimage.getWidth();
@@ -225,7 +216,7 @@ void gCanvas::setupPlayer() {
 	player.h = playerimg[0].getHeight();
 	player.x = 50;
 	player.y = (getHeight() - player.h) / 2;
-	player.speed = 2;
+	player.speed = 10;
 	player.upkey = false;
 	player.downkey = false;
 	player.leftkey = false;
@@ -235,9 +226,57 @@ void gCanvas::setupPlayer() {
 	player.ishit = false;
 	player.deadanimplayed = false;
 	player.health = 3;
-	player.shootkey = true;
+	player.canshoot = true;
 	player.cooldown = 2;
 	player.cooldowntimer = 0;
+
+	player.gold = 0;
+	player.score = 0;
+}
+
+void gCanvas::setupEnemy() {
+	enemyimage[UFO_RED].loadImage("red_ufo_idle_1.png");
+	enemyimage[UFO_BLACK].loadImage("black_ufo_idle_1.png");
+	enemyimage[UFO_GREEN].loadImage("green_ufo_idle_1.png");
+	enemyimage[SUIT_BLACK].loadImage("black_suit_idle_1.png");
+	enemyimage[SUIT_PURPLE].loadImage("purple_suit_idle_1.png");
+	enemyimage[SUIT_ORANGE].loadImage("orange_suit_idle_1.png");
+
+	enemyspeeds[UFO_RED] = 5.0f;
+	enemyspeeds[UFO_BLACK] = 5.0f;
+	enemyspeeds[UFO_GREEN] = 5.0f;
+	enemyspeeds[SUIT_BLACK] = 5.0f;
+	enemyspeeds[SUIT_PURPLE] = 5.0f;
+	enemyspeeds[SUIT_ORANGE] = 5.0f;
+
+	enemydamages[UFO_RED] = 50.0f;
+	enemydamages[UFO_BLACK] = 30.0f;
+	enemydamages[UFO_GREEN] = 40.0f;
+	enemydamages[SUIT_BLACK] = 25.0f;
+	enemydamages[SUIT_PURPLE] = 35.0f;
+	enemydamages[SUIT_ORANGE] = 45.0f;
+
+	enemyhealths[UFO_RED] = 500.0f;
+	enemyhealths[UFO_BLACK] = 300.0f;
+	enemyhealths[UFO_GREEN] = 400.0f;
+	enemyhealths[SUIT_BLACK] = 250.0f;
+	enemyhealths[SUIT_PURPLE] = 350.0f;
+	enemyhealths[SUIT_ORANGE] = 450.0f;
+
+	enemycooldown[UFO_RED] = 5.0f;
+	enemycooldown[UFO_BLACK] = 3.0f;
+	enemycooldown[UFO_GREEN] = 4.0f;
+	enemycooldown[SUIT_BLACK] = 2.0f;
+	enemycooldown[SUIT_PURPLE] = 3.0f;
+	enemycooldown[SUIT_ORANGE] = 4.0f;
+
+	enemycooldowntimer[UFO_RED] = 0;
+	enemycooldowntimer[UFO_BLACK] = 0;
+	enemycooldowntimer[UFO_GREEN] = 0;
+	enemycooldowntimer[SUIT_BLACK] = 0;
+	enemycooldowntimer[SUIT_PURPLE] = 0;
+	enemycooldowntimer[SUIT_ORANGE] = 0;
+
 }
 
 void gCanvas::setupExplosion() {
@@ -321,29 +360,72 @@ void gCanvas::updateBackground() {
 }
 
 void gCanvas::updateGold() {
-	for(auto& gold : golds) {
+	for(int i = 0; i < activegolds.size(); i++) {
+		Gold& gold = activegolds[i];
+
+		gold.x -= gold.speed;
 		goldAnimator(gold, GOLD_FRAME_COUNT);
+
+		gold.iscollide = checkCollision(gold.x, gold.y, gold.w, gold.h, COL_GP);
+		if(gold.iscollide || (gold.x + gold.w) < mapleft) activegolds.erase(activegolds.begin() + i);
 	}
 }
 
 void gCanvas::updatePlayer() {
 	// Movement
-	if(player.upkey) player.y -= 1 * player.speed;
-	if(player.downkey) player.y += 1 * player.speed;
-	if(player.leftkey) player.x -= 1 * player.speed;
-	if(player.rightkey) player.x += 1 * player.speed;
+	if(player.upkey && player.y > maptop) player.y -= 1 * player.speed;
+	if(player.downkey && (player.y + player.h) < mapbottom) player.y += 1 * player.speed;
+	if(player.leftkey && player.x > mapleft) player.x -= 1 * player.speed;
+	if(player.rightkey && (player.x + player.w) < mapright) player.x += 1 * player.speed;
 
-	// Animation
-	if(player.ishit) {
-		playerAnimator(player, 2, 3, PLAYER_HURT);
-	}
-	else {
-		playerAnimator(player, 0, 2, PLAYER_IDLE);
+	// Control the collision between the player and the enemy.
+	player.ishit = checkCollision(player.x, player.y, player.w, player.h, COL_PE);
+	playerAnimControl();
+
+	if(!player.ishit) playerAnimator(player, 0, 2, PLAYER_IDLE);
+	if(!player.canshoot) {
+		player.canshoot = cooldown(player.cooldown, player.cooldowntimer);
 	}
 
-	if(!player.shootkey) {
-		player.shootkey = cooldown(player.cooldown, player.cooldowntimer);
+//	checkCollision(player.x, player.y, player.w, player.h, COL_PB);
+}
+
+void gCanvas::updateEnemy() {
+	for(int i = 0; i < enemies.size(); i++){
+		Enemy& enemy = enemies[i];
+		// Delete an enemy if their health is below 0 or they are outside the map limits, then generate drops.
+		if(enemy.health <= 0 || (enemy.x + enemy.w) < mapleft){
+			// Increase score
+			player.score++;
+			// Generate drop
+			generateGold(enemy.x, enemy.y, enemy.w, enemy.h);
+			// Generate explosion
+			generateExplosion(enemy.x, enemy.y, enemy.w, enemy.h);
+			// Delete
+			enemies.erase(enemies.begin() + i);
+		}
+		// Enemy movement.
+		enemy.x -= enemy.speed;
+		// Enemy shoot control.
+		if(!enemy.canshoot) {
+			enemy.canshoot = cooldown(enemy.cooldown, enemy.cooldowntimer);
+		}
+		else {
+			int bullettype = enemy.type < 3 ? UFO_ALIEN : SUIT_ALIEN;
+			generateBullet(enemy.x, enemy.y + (enemy.h / 4), enemy.w, enemy.h, OWNER_ENEMY, bullettype);
+			enemy.canshoot = false;
+		}
+
 	}
+}
+void gCanvas::generateEnemy() {
+	spawnctr++;
+	if(spawnctr > spawnctrlimit){
+		spawnctr = 0;
+		int type = int(gRandom(float(maxenemytypenum)));
+		spawnEnemy(type);
+	}
+
 }
 
 void gCanvas::updateExplosion() {
@@ -362,13 +444,31 @@ void gCanvas::updateExplosion() {
 
 void gCanvas::updateBullet() {
 	for(int i = 0; i < activebullets.size(); i++) {
-		activebullets[i].x += activebullets[i].speed * activebullets[i].owner;
-		if(activebullets[i].x > getWidth() || activebullets[i].x + activebullets[i].w < 0) activebullets.erase(activebullets.begin() + i);
+		activebullets[i].x += activebullets[i].speed;
+		Bullet& bullet = activebullets[i];
+
+		// Control the collision between the bullet and the player.
+		if(bullet.owner == OWNER_ENEMY) bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_PB, bullet.damage);
+		playerAnimControl();
+		// Control the collision between the bullet and the enemy.
+		if(bullet.owner == OWNER_PLAYER) bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_EB, bullet.damage);
+		// Control the collision between the bullet and the bullet.
+		bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_BB, 0, bullet.id);
+
+		if(bullet.ishit || bullet.x > getWidth() || (bullet.x + bullet.w) < mapleft) activebullets.erase(activebullets.begin() + i);
 	}
 }
 
 void gCanvas::drawPlayer() {
 	playerimg[player.animframeno].draw(player.x, player.y, player.w, player.h);
+}
+
+void gCanvas::drawEnemy() {
+	for(int i = 0; i < enemies.size(); i++){
+		Enemy& enemy = enemies[i];
+		enemyimage[enemy.type].draw(enemy.x, enemy.y, enemy.w, enemy.h);
+	}
+
 }
 
 void gCanvas::drawBackground() {
@@ -386,7 +486,7 @@ void gCanvas::drawGameButtons() {
 }
 
 void gCanvas::drawGold() {
-	for(const auto& gold : golds) {
+	for(const auto& gold : activegolds) {
 		goldimage[gold.animframeno].draw(gold.x, gold.y, gold.w, gold.h);
 	}
 }
@@ -404,8 +504,8 @@ void gCanvas::drawExplosion() {
 
 void gCanvas::drawBullet() {
 	for(auto& bullet : activebullets) {
-		if(bullet.owner == OWNER_PLAYER) bulletimage[bullet.owner - 1].draw(bullet.x, bullet.y, bullet.w, bullet.h);
-		if(bullet.owner == OWNER_ENEMY) bulletimage[1].draw(bullet.x, bullet.y, bullet.w, bullet.h);
+		if(bullet.owner == OWNER_PLAYER) bulletimage[bullet.type].draw(bullet.x, bullet.y, bullet.w, bullet.h);
+		if(bullet.owner == OWNER_ENEMY) bulletimage[bullet.type].draw(bullet.x, bullet.y, bullet.w, bullet.h);
 	}
 }
 
@@ -419,14 +519,17 @@ void gCanvas::drawPanel() {
 
 void gCanvas::generateGold(int x, int y, int w, int h) {
 	Gold newgold;
-	newgold.x = x;
-	newgold.y = y;
-	newgold.w = w;
-	newgold.h = h;
+
+	newgold.w = goldimage[0].getWidth();
+	newgold.h = goldimage[0].getHeight();
+	newgold.x = x + ((w - newgold.w) / 2);
+	newgold.y = y + ((h - newgold.h) / 2);
 	newgold.animcounter = 0;
 	newgold.animframeno = 0;
+	newgold.iscollide = false;
+	newgold.speed = 5;
 
-	golds.push_back(newgold);
+	activegolds.push_back(newgold);
 }
 
 void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,
@@ -444,16 +547,26 @@ void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,
 	newexplosion.clear();
 }
 
-void gCanvas::generateBullet(int x, int y, int w, int h, int owner) {
+void gCanvas::generateBullet(int x, int y, int w, int h, int owner, int type) {
 	Bullet newbullet;
+	if(activebullets.size() > 0) newbullet.id = activebullets[activebullets.size() - 1].id + 1;
+	else newbullet.id = 0;
 
-	newbullet.w = w;
-	newbullet.h = h;
+	if(owner == OWNER_ENEMY) {
+		newbullet.w = w / 2;
+		newbullet.h = h / 4;
+	}
+	else {
+		newbullet.w = w;
+		newbullet.h = h;
+	}
 	newbullet.x = x;
 	newbullet.y = y;
 	newbullet.damage = 100;
-	newbullet.speed = 10;
+	newbullet.speed = owner == OWNER_PLAYER ? 10 : -10;
 	newbullet.owner = owner;
+	newbullet.ishit = false;
+	newbullet.type = type;
 
 	activebullets.push_back(newbullet);
 }
@@ -510,36 +623,9 @@ bool gCanvas::cooldown(int &time, int &timer) {
 	}
 	return false;
 }
-void gCanvas::drawEnemy() {
-	for(int i = 0; i < enemies.size(); i++){
-		enemy& enemy = enemies[i];
-		enemyimage[enemy.type].draw(enemy.x, enemy.y, enemy.w, enemy.h);
-	}
 
-}
-void gCanvas::updateEnemy() {
-	for(int i = 0; i < enemies.size(); i++){
-		enemy& enemy = enemies[i];
-		enemy.x -= enemy.speed;
-//cani ve x degeri 0 dan kucukse sil
-		if(enemy.health <= 0 && enemy.x < 0){
-			enemy.isalive = false;
-			// sil
-			enemies.erase(enemies.begin() + i);
-		}
-	}
-}
-void gCanvas::generateEnemy() {
-	spawnctr++;
-	if(spawnctr > spawnctrlimit){
-		spawnctr = 0;
-		int type = int(gRandom(float(maxenemytypenum)));
-		spawnEnemy(type);
-	}
-
-}
 void gCanvas::spawnEnemy(int type) {
-	enemy newenemy;
+	Enemy newenemy;
 	newenemy.w = enemyimage[type].getWidth();
 	newenemy.h = enemyimage[type].getHeight();
 	newenemy.x = getWidth();
@@ -555,49 +641,62 @@ void gCanvas::spawnEnemy(int type) {
 	enemies.push_back(newenemy);
 }
 
-void gCanvas::setupEnemy() {
-	enemyimage[UFO_RED].loadImage("red_ufo_idle_1.png");
-	enemyimage[UFO_BLACK].loadImage("black_ufo_idle_1.png");
-	enemyimage[UFO_GREEN].loadImage("green_ufo_idle_1.png");
-	enemyimage[SUIT_BLACK].loadImage("black_suit_idle_1.png");
-	enemyimage[SUIT_PURPLE].loadImage("purple_suit_idle_1.png");
-	enemyimage[SUIT_ORANGE].loadImage("orange_suit_idle_1.png");
+bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, int id) {
+	if(type == COL_PB) {
+		checkcol = gCheckCollision(x, y, x + w, y + h, player.x, player.y, player.x + player.w, player.y + player.h);
+		if(checkcol) {
+			player.ishit = true;
+			player.health -= power;
+			return checkcol;
+		}
+	}
 
-	enemyspeeds[UFO_RED] = 5.0f;
-	enemyspeeds[UFO_BLACK] = 5.0f;
-	enemyspeeds[UFO_GREEN] = 5.0f;
-	enemyspeeds[SUIT_BLACK] = 5.0f;
-	enemyspeeds[SUIT_PURPLE] = 5.0f;
-	enemyspeeds[SUIT_ORANGE] = 5.0f;
+	if(type == COL_PE) {
+		for(auto enemy : enemies) {
+			checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
+			if(checkcol) {
+				player.ishit = true;
+				player.health -= power;
+				return checkcol;
+			}
+		}
+	}
 
-	enemydamages[UFO_RED] = 50.0f;
-	enemydamages[UFO_BLACK] = 30.0f;
-	enemydamages[UFO_GREEN] = 40.0f;
-	enemydamages[SUIT_BLACK] = 25.0f;
-	enemydamages[SUIT_PURPLE] = 35.0f;
-	enemydamages[SUIT_ORANGE] = 45.0f;
+	if(type == COL_EB) {
+		for(int i = 0; i < enemies.size(); i++) {
+			Enemy& enemy = enemies[i];
 
-	enemyhealths[UFO_RED] = 500.0f;
-	enemyhealths[UFO_BLACK] = 300.0f;
-	enemyhealths[UFO_GREEN] = 400.0f;
-	enemyhealths[SUIT_BLACK] = 250.0f;
-	enemyhealths[SUIT_PURPLE] = 350.0f;
-	enemyhealths[SUIT_ORANGE] = 450.0f;
+			checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
+			if(checkcol) {
+				enemy.health -= power;
+				return checkcol;
+			}
+		}
+	}
 
-	enemycooldown[UFO_RED] = 5.0f;
-	enemycooldown[UFO_BLACK] = 3.0f;
-	enemycooldown[UFO_GREEN] = 4.0f;
-	enemycooldown[SUIT_BLACK] = 2.0f;
-	enemycooldown[SUIT_PURPLE] = 3.0f;
-	enemycooldown[SUIT_ORANGE] = 4.0f;
+	if(type == COL_BB) {
+		for(int i = 0; i < activebullets.size(); i++) {
+			Bullet& bullet = activebullets[i];
+			if(id != bullet.id) {
+				checkcol = gCheckCollision(x, y, x + w, y + h, bullet.x, bullet.y, bullet.x + bullet.w, bullet.y + bullet.h);
+				return checkcol;
+			}
+		}
+	}
 
-	enemycooldowntimer[UFO_RED] = 0;
-	enemycooldowntimer[UFO_BLACK] = 0;
-	enemycooldowntimer[UFO_GREEN] = 0;
-	enemycooldowntimer[SUIT_BLACK] = 0;
-	enemycooldowntimer[SUIT_PURPLE] = 0;
-	enemycooldowntimer[SUIT_ORANGE] = 0;
+	if(type == COL_GP) {
+		checkcol = gCheckCollision(x, y, x + w, y + h, player.x, player.y, player.x + player.w, player.y + player.h);
+		player.gold++;
+		return checkcol;
+	}
 
+	return false;
 }
 
-
+void gCanvas::playerAnimControl() {
+	// Animation
+	if(player.ishit) {
+		playerAnimator(player, 2, 3, PLAYER_HURT);
+		player.ishit = cooldown(player.cooldown, player.cooldowntimer);
+	}
+}
