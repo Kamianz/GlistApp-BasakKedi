@@ -137,7 +137,6 @@ void menuCanvas::setupButton() {
 	buttongroup[0].x = getWidth() - ((getWidth() - buttongroup[0].w) / 3);
 	buttongroup[0].y = (getHeight() - buttongroup[0].h) / 2;
 	buttongroup[0].pressed = false;
-
 }
 
 void menuCanvas::updateButton() {

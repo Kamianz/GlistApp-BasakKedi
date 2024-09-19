@@ -78,9 +78,9 @@ void gCanvas::keyPressed(int key) {
 	if(key == 32) {
 //		player.ishit = !player.ishit;
 //		generateExplosion(player.x, player.y, 128, 128);
-		if(player.canshoot){
+		if(player.shootkey){
 			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER);
-			player.canshoot = false;
+			player.shootkey = false;
 		}
 	}
 	if(key == 87) {
@@ -234,7 +234,7 @@ void gCanvas::setupPlayer() {
 	player.ishit = false;
 	player.deadanimplayed = false;
 	player.health = 3;
-	player.canshoot = true;
+	player.shootkey = true;
 	player.cooldown = 2;
 	player.cooldowntimer = 0;
 }
@@ -249,7 +249,10 @@ void gCanvas::setupExplosion() {
 
 void gCanvas::setupGameButtons() {
 	for(int i = 0; i < BUTTON_COUNT; i++) {
-		gamebuttonimage[i].loadImage("buttons/shadedDark" + gToStr(24 + i) + ".png");
+		if(i >= BUTTON_COUNT - 1) {
+			gamebuttonimage[i].loadImage("buttons/shadedDark48.png");
+		}
+		else gamebuttonimage[i].loadImage("buttons/shadedDark" + gToStr(24 + i) + ".png");
 		gamebutton[i].w = gamebuttonimage[i].getWidth() * 2;
 		gamebutton[i].h = gamebuttonimage[i].getHeight() * 2;
 		gamebutton[i].y = getHeight() - (gamebutton[i].h * 1.25f);
@@ -308,12 +311,12 @@ void gCanvas::setupPanel() {
 }
 
 void gCanvas::updateBackground() {
-    for(int i = 0; i < BACKGROUND_COUNT; i++) {
-        background[i].x -= 1;
-        if(background[i].x <= -background[i].w) {
-            background[i].x = background[(i - 1 + BACKGROUND_COUNT) % BACKGROUND_COUNT].x + background[i].w;
-        }
-    }
+	for(int i = 0; i < BACKGROUND_COUNT; i++) {
+		background[i].x -= 1;
+		if((background[i].x + background[i].w) < 0) {
+			background[i].x = getWidth();
+		}
+	}
 }
 
 void gCanvas::updateGold() {
@@ -337,8 +340,8 @@ void gCanvas::updatePlayer() {
 		playerAnimator(player, 0, 2, PLAYER_IDLE);
 	}
 
-	if(!player.canshoot) {
-		player.canshoot = cooldown(player.cooldown, player.cooldowntimer);
+	if(!player.shootkey) {
+		player.shootkey = cooldown(player.cooldown, player.cooldowntimer);
 	}
 }
 
@@ -359,7 +362,7 @@ void gCanvas::updateExplosion() {
 void gCanvas::updateBullet() {
 	for(int i = 0; i < activebullets.size(); i++) {
 		activebullets[i].x += activebullets[i].speed * activebullets[i].owner;
-		if(activebullets[i].ishit == true || activebullets[i].x > getWidth() || activebullets[i].x + activebullets[i].w < 0) activebullets.erase(activebullets.begin() + i);
+		if(activebullets[i].x > getWidth() || activebullets[i].x + activebullets[i].w < 0) activebullets.erase(activebullets.begin() + i);
 	}
 }
 

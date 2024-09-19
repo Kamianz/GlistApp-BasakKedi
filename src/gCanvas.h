@@ -42,8 +42,8 @@ public:
 private:
 	gApp* root;
 
-	static const int BUTTON_COUNT = 4;
-	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3;
+	static const int BUTTON_COUNT = 5;
+	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
 	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_FRAME_COUNT = 4;
 	static const int PLAYER_IDLE = 0, PLAYER_HURT = 1;
 	static const int BACKGROUND_COUNT = 2;
@@ -64,11 +64,10 @@ private:
 		float x, y, w, h;
 		float speed;
 		float health;
-		bool upkey, downkey, leftkey, rightkey;
+		bool upkey, downkey, leftkey, rightkey, shootkey;
 		int animcounter, animframeno;
 		bool ishit;
 		bool deadanimplayed;
-		bool canshoot;
 		int cooldown, cooldowntimer;
 	};
 
