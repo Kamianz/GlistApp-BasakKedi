@@ -23,7 +23,7 @@ void gCanvas::setup() {
 	setupExplosion();
 	setupPanel();
 	setupBullet();
-
+	setupEnemy();
 	setupGameButtons();
 
 	// For control purpose.
@@ -42,7 +42,8 @@ void gCanvas::update() {
 	updatePlayer();
 	updateExplosion();
 	updateBullet();
-
+	generateEnemy();
+	updateEnemy();
 	// For control purpose.
 //	if(!canenemyshoot) {
 //		canenemyshoot = cooldown(enemycd, enemytimer);
@@ -60,7 +61,7 @@ void gCanvas::draw() {
 	drawExplosion();
 	drawPanel();
 	drawBullet();
-
+	drawEnemy();
 	drawGameButtons();
 
 	// For control purpose.
@@ -509,3 +510,94 @@ bool gCanvas::cooldown(int &time, int &timer) {
 	}
 	return false;
 }
+void gCanvas::drawEnemy() {
+	for(int i = 0; i < enemies.size(); i++){
+		enemy& enemy = enemies[i];
+		enemyimage[enemy.type].draw(enemy.x, enemy.y, enemy.w, enemy.h);
+	}
+
+}
+void gCanvas::updateEnemy() {
+	for(int i = 0; i < enemies.size(); i++){
+		enemy& enemy = enemies[i];
+		enemy.x -= enemy.speed;
+//cani ve x degeri 0 dan kucukse sil
+		if(enemy.health <= 0 && enemy.x < 0){
+			enemy.isalive = false;
+			// sil
+			enemies.erase(enemies.begin() + i);
+		}
+	}
+}
+void gCanvas::generateEnemy() {
+	spawnctr++;
+	if(spawnctr > spawnctrlimit){
+		spawnctr = 0;
+		int type = int(gRandom(float(maxenemytypenum)));
+		spawnEnemy(type);
+	}
+
+}
+void gCanvas::spawnEnemy(int type) {
+	enemy newenemy;
+	newenemy.w = enemyimage[type].getWidth();
+	newenemy.h = enemyimage[type].getHeight();
+	newenemy.x = getWidth();
+	newenemy.y = int(gRandom(float(getHeight() - newenemy.h)));
+	newenemy.type = type;
+	newenemy.speed = enemyspeeds[type];
+	newenemy.health = enemyhealths[type];
+	newenemy.damage = enemydamages[type];
+	newenemy.isalive = true;
+	newenemy.cooldown = enemycooldown[type];
+	newenemy.cooldowntimer = enemycooldowntimer[type];
+
+	enemies.push_back(newenemy);
+}
+
+void gCanvas::setupEnemy() {
+	enemyimage[UFO_RED].loadImage("red_ufo_idle_1.png");
+	enemyimage[UFO_BLACK].loadImage("black_ufo_idle_1.png");
+	enemyimage[UFO_GREEN].loadImage("green_ufo_idle_1.png");
+	enemyimage[SUIT_BLACK].loadImage("black_suit_idle_1.png");
+	enemyimage[SUIT_PURPLE].loadImage("purple_suit_idle_1.png");
+	enemyimage[SUIT_ORANGE].loadImage("orange_suit_idle_1.png");
+
+	enemyspeeds[UFO_RED] = 5.0f;
+	enemyspeeds[UFO_BLACK] = 5.0f;
+	enemyspeeds[UFO_GREEN] = 5.0f;
+	enemyspeeds[SUIT_BLACK] = 5.0f;
+	enemyspeeds[SUIT_PURPLE] = 5.0f;
+	enemyspeeds[SUIT_ORANGE] = 5.0f;
+
+	enemydamages[UFO_RED] = 50.0f;
+	enemydamages[UFO_BLACK] = 30.0f;
+	enemydamages[UFO_GREEN] = 40.0f;
+	enemydamages[SUIT_BLACK] = 25.0f;
+	enemydamages[SUIT_PURPLE] = 35.0f;
+	enemydamages[SUIT_ORANGE] = 45.0f;
+
+	enemyhealths[UFO_RED] = 500.0f;
+	enemyhealths[UFO_BLACK] = 300.0f;
+	enemyhealths[UFO_GREEN] = 400.0f;
+	enemyhealths[SUIT_BLACK] = 250.0f;
+	enemyhealths[SUIT_PURPLE] = 350.0f;
+	enemyhealths[SUIT_ORANGE] = 450.0f;
+
+	enemycooldown[UFO_RED] = 5.0f;
+	enemycooldown[UFO_BLACK] = 3.0f;
+	enemycooldown[UFO_GREEN] = 4.0f;
+	enemycooldown[SUIT_BLACK] = 2.0f;
+	enemycooldown[SUIT_PURPLE] = 3.0f;
+	enemycooldown[SUIT_ORANGE] = 4.0f;
+
+	enemycooldowntimer[UFO_RED] = 0;
+	enemycooldowntimer[UFO_BLACK] = 0;
+	enemycooldowntimer[UFO_GREEN] = 0;
+	enemycooldowntimer[SUIT_BLACK] = 0;
+	enemycooldowntimer[SUIT_PURPLE] = 0;
+	enemycooldowntimer[SUIT_ORANGE] = 0;
+
+}
+
+

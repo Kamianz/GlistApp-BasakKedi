@@ -41,7 +41,8 @@ public:
 
 private:
 	gApp* root;
-
+	static const int maxenemytypenum = 6;
+	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
 	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_FRAME_COUNT = 4;
@@ -70,6 +71,16 @@ private:
 		bool deadanimplayed;
 		int cooldown, cooldowntimer;
 	};
+	struct enemy {
+		float x, y, w, h;
+		float speed;
+		float health;
+		float damage;
+		bool isalive;
+		int cooldown, cooldowntimer;
+		int type;
+
+	};
 
 	struct Background {
 		int x, y, w, h;
@@ -93,12 +104,14 @@ private:
 	void setupExplosion();
 	void setupPanel();
 	void setupBullet();
+	void setupEnemy();
 
 	void updateBackground();
 	void updateGold();
 	void updatePlayer();
     void updateExplosion();
     void updateBullet();
+    void updateEnemy();
 
 	void drawBackground();
 	void drawGameButtons();
@@ -107,15 +120,17 @@ private:
     void drawExplosion();
     void drawPanel();
     void drawBullet();
+    void drawEnemy();
 
 	void generateGold(int x, int y, int w, int h);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
 	void generateBullet(int x, int y, int w, int h, int owner);
+	void generateEnemy();
 
 	void goldAnimator(Gold &gold, int maxanimframe);
 	void playerAnimator(Player &player, int startanimframe, int maxanimframe, int animtype);
 	bool cooldown(int &time, int &timer);
-
+	void spawnEnemy(int type);
 	gImage backgroundimage;
 	gImage playerimg[PLAYER_FRAME_COUNT];
 	gImage gamebuttonimage[BUTTON_COUNT];
@@ -124,6 +139,7 @@ private:
 	gImage puanpanelimage;
 	gImage goldpanelimage;
 	gImage bulletimage[3];
+	gImage enemyimage[maxenemytypenum];
 
 
 	Background background[BACKGROUND_COUNT];
@@ -155,6 +171,16 @@ private:
 //    int enemyx, enemyy, enemyw, enemyh;
 //    int enemytimer, enemycd;
 //    bool canenemyshoot;
+
+    std::vector<enemy> enemies;
+    float enemyspeeds[maxenemytypenum];
+    float enemydamages[maxenemytypenum];
+    float enemyhealths[maxenemytypenum];
+    float enemycooldown[maxenemytypenum];
+    float enemycooldowntimer[maxenemytypenum];
+
+    int spawnctr = 0;
+    int spawnctrlimit = 100;
 };
 
 #endif /* GCANVAS_H_ */
