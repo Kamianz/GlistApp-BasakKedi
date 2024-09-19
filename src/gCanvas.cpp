@@ -22,8 +22,18 @@ void gCanvas::setup() {
 	setupGold();
 	setupExplosion();
 	setupPanel();
+	setupBullet();
 
 	setupGameButtons();
+
+	// For control purpose.
+//	enemyx = 1000;
+//	enemyy = player.y;
+//	enemyw = player.w;
+//	enemyh = player.h;
+//	canenemyshoot = true;
+//	enemycd = 2;
+//	enemytimer = 0;
 }
 
 void gCanvas::update() {
@@ -31,6 +41,16 @@ void gCanvas::update() {
 	updateGold();
 	updatePlayer();
 	updateExplosion();
+	updateBullet();
+
+	// For control purpose.
+//	if(!canenemyshoot) {
+//		canenemyshoot = cooldown(enemycd, enemytimer);
+//	}
+//	else {
+//		generateBullet(enemyx, enemyy, enemyw, enemyh, OWNER_ENEMY);
+//		canenemyshoot = false;
+//	}
 }
 
 void gCanvas::draw() {
@@ -39,18 +59,29 @@ void gCanvas::draw() {
 	drawGold();
 	drawExplosion();
 	drawPanel();
+	drawBullet();
 
 	drawGameButtons();
+
+	// For control purpose.
+//	gDrawRectangle(enemyx, enemyy, enemyw, enemyh);
 }
 
 void gCanvas::keyPressed(int key) {
 //	gLogi("gCanvas") << "keyPressed:" << key;
+//	gLogi("Key ") << std::to_string(key);
 	if(key == 71) {
 		generateGold(50, 50, 50, 50);
 	}
+	if(key == 70) {
+	}
 	if(key == 32) {
 //		player.ishit = !player.ishit;
-		generateExplosion(player.x, player.y, 128, 128);
+//		generateExplosion(player.x, player.y, 128, 128);
+		if(player.canshoot){
+			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER);
+			player.canshoot = false;
+		}
 	}
 	if(key == 87) {
 		player.upkey = true;
@@ -203,6 +234,9 @@ void gCanvas::setupPlayer() {
 	player.ishit = false;
 	player.deadanimplayed = false;
 	player.health = 3;
+	player.canshoot = true;
+	player.cooldown = 2;
+	player.cooldowntimer = 0;
 }
 
 void gCanvas::setupExplosion() {
@@ -241,13 +275,45 @@ void gCanvas::setupGold() {
 	}
 }
 
+void gCanvas::setupBullet() {
+	bulletimage[0].loadImage("cat_shot_1.png");
+	bulletimage[1].loadImage("suit_alien_shot_1.png");
+	bulletimage[2].loadImage("ufo_alien_shot_1.png");
+}
+
+void gCanvas::setupPanel() {
+	puanpanelimage.loadImage("gui/puanpanel.png");
+	goldpanelimage.loadImage("gui/altinpanel.png");
+
+	puanpanel.w = puanpanelimage.getWidth();
+	puanpanel.h = puanpanelimage.getHeight();
+	puanpanel.x = 0;
+	puanpanel.y = 0;
+
+	goldpanel.w = goldpanelimage.getWidth();
+	goldpanel.h = goldpanelimage.getHeight();
+	goldpanel.x = 0;
+	goldpanel.y = puanpanel.h;
+
+	puantext = "0";
+	goldtext = "0";
+
+	panelfont.loadFont("action_man.ttf", 24);
+
+	text[0].x = puanpanel.x + (puanpanel.w / 2.75f);
+	text[0].y = puanpanel.y + (puanpanel.h - (panelfont.getStringHeight(puantext) / 1.25f));
+
+	text[1].x = goldpanel.x + (goldpanel.w / 3.30f);
+	text[1].y = goldpanel.y + (goldpanel.h - (panelfont.getStringHeight(puantext) / 1.25f));
+}
+
 void gCanvas::updateBackground() {
-	for(int i = 0; i < BACKGROUND_COUNT; i++) {
-		background[i].x -= 1;
-		if((background[i].x + background[i].w) < 0) {
-			background[i].x = getWidth();
-		}
-	}
+    for(int i = 0; i < BACKGROUND_COUNT; i++) {
+        background[i].x -= 1;
+        if(background[i].x <= -background[i].w) {
+            background[i].x = background[(i - 1 + BACKGROUND_COUNT) % BACKGROUND_COUNT].x + background[i].w;
+        }
+    }
 }
 
 void gCanvas::updateGold() {
@@ -270,6 +336,10 @@ void gCanvas::updatePlayer() {
 	else {
 		playerAnimator(player, 0, 2, PLAYER_IDLE);
 	}
+
+	if(!player.canshoot) {
+		player.canshoot = cooldown(player.cooldown, player.cooldowntimer);
+	}
 }
 
 void gCanvas::updateExplosion() {
@@ -286,14 +356,23 @@ void gCanvas::updateExplosion() {
 	}
 }
 
+void gCanvas::updateBullet() {
+	for(int i = 0; i < activebullets.size(); i++) {
+		activebullets[i].x += activebullets[i].speed * activebullets[i].owner;
+		if(activebullets[i].ishit == true || activebullets[i].x > getWidth() || activebullets[i].x + activebullets[i].w < 0) activebullets.erase(activebullets.begin() + i);
+	}
+}
+
 void gCanvas::drawPlayer() {
 	playerimg[player.animframeno].draw(player.x, player.y, player.w, player.h);
 }
 
 void gCanvas::drawBackground() {
-	for(int i = 0; i < BACKGROUND_COUNT; i++) {
-		backgroundimage.draw(background[i].x, background[i].y, background[i].w, background[i].h);
-	}
+    for(int i = 0; i < BACKGROUND_COUNT; i++) {
+        if (background[i].x + background[i].w > 0 && background[i].x < getWidth()) {
+            backgroundimage.draw(background[i].x, background[i].y, background[i].w, background[i].h);
+        }
+    }
 }
 
 void gCanvas::drawGameButtons() {
@@ -317,6 +396,21 @@ void gCanvas::drawExplosion() {
 				activeExplosion[i][EX_SX],
 				activeExplosion[i][EX_SY], explosionframew, explosionframeh);
 	}
+}
+
+void gCanvas::drawBullet() {
+	for(auto& bullet : activebullets) {
+		if(bullet.owner == OWNER_PLAYER) bulletimage[bullet.owner - 1].draw(bullet.x, bullet.y, bullet.w, bullet.h);
+		if(bullet.owner == OWNER_ENEMY) bulletimage[1].draw(bullet.x, bullet.y, bullet.w, bullet.h);
+	}
+}
+
+void gCanvas::drawPanel() {
+	puanpanelimage.draw(puanpanel.x, puanpanel.y, puanpanel.w, puanpanel.h);
+	goldpanelimage.draw(goldpanel.x, goldpanel.y, goldpanel.w, goldpanel.h);
+
+	panelfont.drawText(puantext, text[0].x, text[0].y);
+	panelfont.drawText(goldtext, text[1].x, text[1].y);
 }
 
 void gCanvas::generateGold(int x, int y, int w, int h) {
@@ -344,6 +438,20 @@ void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,
 
 	activeExplosion.push_back(newexplosion);
 	newexplosion.clear();
+}
+
+void gCanvas::generateBullet(int x, int y, int w, int h, int owner) {
+	Bullet newbullet;
+
+	newbullet.w = w;
+	newbullet.h = h;
+	newbullet.x = x;
+	newbullet.y = y;
+	newbullet.damage = 100;
+	newbullet.speed = 10;
+	newbullet.owner = owner;
+
+	activebullets.push_back(newbullet);
 }
 
 void gCanvas::goldAnimator(Gold &gold, int maxanimframe) {
@@ -388,36 +496,13 @@ void gCanvas::playerAnimator(Player &player, int startanimframe, int maxanimfram
 	}
 }
 
-void gCanvas::setupPanel() {
-	puanpanelimage.loadImage("gui/puanpanel.png");
-	goldpanelimage.loadImage("gui/altinpanel.png");
-
-	puanpanel.w = puanpanelimage.getWidth();
-	puanpanel.h = puanpanelimage.getHeight();
-	puanpanel.x = 0;
-	puanpanel.y = 0;
-
-	goldpanel.w = goldpanelimage.getWidth();
-	goldpanel.h = goldpanelimage.getHeight();
-	goldpanel.x = 0;
-	goldpanel.y = puanpanel.h;
-
-	puantext = "0";
-	goldtext = "0";
-
-	panelfont.loadFont("action_man.ttf", 24);
-
-	text[0].x = puanpanel.x + (puanpanel.w / 2.75f);
-	text[0].y = puanpanel.y + (puanpanel.h - (panelfont.getStringHeight(puantext) / 1.25f));
-
-	text[1].x = goldpanel.x + (goldpanel.w / 3.30f);
-	text[1].y = goldpanel.y + (goldpanel.h - (panelfont.getStringHeight(puantext) / 1.25f));
-}
-
-void gCanvas::drawPanel() {
-	puanpanelimage.draw(puanpanel.x, puanpanel.y, puanpanel.w, puanpanel.h);
-	goldpanelimage.draw(goldpanel.x, goldpanel.y, goldpanel.w, goldpanel.h);
-
-	panelfont.drawText(puantext, text[0].x, text[0].y);
-	panelfont.drawText(goldtext, text[1].x, text[1].y);
+bool gCanvas::cooldown(int &time, int &timer) {
+	timer++;
+	if(timer % 60 == 0) {
+		time--;
+		if(time <= 0) {
+			return true;
+		}
+	}
+	return false;
 }
