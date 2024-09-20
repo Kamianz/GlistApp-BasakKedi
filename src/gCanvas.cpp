@@ -37,6 +37,7 @@ void gCanvas::update() {
 	updateBullet();
 	generateEnemy();
 	updateEnemy();
+	gLogi("gCanvas") << "keyPressed:" << player.health;
 }
 
 void gCanvas::draw() {
@@ -58,7 +59,7 @@ void gCanvas::keyPressed(int key) {
 //		player.ishit = !player.ishit;
 //		generateExplosion(player.x, player.y, 128, 128);
 		if(player.canshoot){
-			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER);
+			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
 			player.canshoot = false;
 		}
 	}
@@ -125,7 +126,7 @@ void gCanvas::mousePressed(int x, int y, int button) {
 						break;
 					case BUTTON_FIRE:
 						if(player.canshoot){
-							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER);
+							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER , player.damage);
 							player.canshoot = false;
 						}
 						break;
@@ -225,10 +226,11 @@ void gCanvas::setupPlayer() {
 	player.animframeno = 0;
 	player.ishit = false;
 	player.deadanimplayed = false;
-	player.health = 3;
+	player.health = 1000;
 	player.canshoot = true;
 	player.cooldown = 2;
 	player.cooldowntimer = 0;
+	player.damage = 120;
 
 	player.gold = 0;
 	player.score = 0;
@@ -327,6 +329,8 @@ void gCanvas::setupBullet() {
 void gCanvas::setupPanel() {
 	puanpanelimage.loadImage("gui/puanpanel.png");
 	goldpanelimage.loadImage("gui/altinpanel.png");
+    healthbarimage.loadImage("gui/life_energy_bar.png");
+    healthfillimage.loadImage("gui/life_fill.png");
 
 	puanpanel.w = puanpanelimage.getWidth();
 	puanpanel.h = puanpanelimage.getHeight();
@@ -337,6 +341,11 @@ void gCanvas::setupPanel() {
 	goldpanel.h = goldpanelimage.getHeight();
 	goldpanel.x = 0;
 	goldpanel.y = puanpanel.h;
+
+    healthbar.w = healthbarimage.getWidth();
+    healthbar.h = healthbarimage.getHeight();
+    healthbar.x = getWidth() - healthbar.w - 10;
+    healthbar.y = 10;
 
 	puantext = "0";
 	goldtext = "0";
@@ -412,7 +421,7 @@ void gCanvas::updateEnemy() {
 		}
 		else {
 			int bullettype = enemy.type < 3 ? UFO_ALIEN : SUIT_ALIEN;
-			generateBullet(enemy.x, enemy.y + (enemy.h / 4), enemy.w, enemy.h, OWNER_ENEMY, bullettype);
+			generateBullet(enemy.x, enemy.y + (enemy.h / 4), enemy.w, enemy.h, OWNER_ENEMY, bullettype, enemy.damage);
 			enemy.canshoot = false;
 		}
 
@@ -443,20 +452,37 @@ void gCanvas::updateExplosion() {
 }
 
 void gCanvas::updateBullet() {
-	for(int i = 0; i < activebullets.size(); i++) {
-		activebullets[i].x += activebullets[i].speed;
-		Bullet& bullet = activebullets[i];
 
-		// Control the collision between the bullet and the player.
-		if(bullet.owner == OWNER_ENEMY) bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_PB, bullet.damage);
-		playerAnimControl();
-		// Control the collision between the bullet and the enemy.
-		if(bullet.owner == OWNER_PLAYER) bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_EB, bullet.damage);
-		// Control the collision between the bullet and the bullet.
-		bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_BB, 0, bullet.id);
+    for(int i = 0; i < activebullets.size(); i++) {
+        Bullet& bullet = activebullets[i];
+        bullet.x += bullet.speed;
+        bullet.ishit = false;
+        if(bullet.owner == OWNER_ENEMY) {
+            bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_PB, bullet.damage);
+            if(bullet.ishit){
+                playerAnimControl();
+                activebullets.erase(activebullets.begin() + i);
+                i--;
+                continue;
+            }
 
-		if(bullet.ishit || bullet.x > getWidth() || (bullet.x + bullet.w) < mapleft) activebullets.erase(activebullets.begin() + i);
-	}
+        }
+        if(bullet.owner == OWNER_PLAYER) {
+            bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_EB, bullet.damage);
+            if(bullet.ishit){
+                activebullets.erase(activebullets.begin() + i);
+                i--;
+                continue;
+            }
+        }
+
+        bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_BB, 0, bullet.id);
+
+        if (bullet.ishit || bullet.x > getWidth() || (bullet.x + bullet.w) < mapleft) {
+            activebullets.erase(activebullets.begin() + i);
+            i--;
+        }
+    }
 }
 
 void gCanvas::drawPlayer() {
@@ -515,6 +541,12 @@ void gCanvas::drawPanel() {
 
 	panelfont.drawText(puantext, text[0].x, text[0].y);
 	panelfont.drawText(goldtext, text[1].x, text[1].y);
+
+    healthbarimage.draw(healthbar.x, healthbar.y, healthbar.w, healthbar.h);
+    float healthPercentage = std::max(0.0f, std::min(static_cast<float>(player.health) / 3.0f, 1.0f));
+    float fillWidth = healthbar.w * healthPercentage;
+
+    healthfillimage.draw(healthbar.x, healthbar.y, fillWidth, healthbar.h);
 }
 
 void gCanvas::generateGold(int x, int y, int w, int h) {
@@ -547,7 +579,7 @@ void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,
 	newexplosion.clear();
 }
 
-void gCanvas::generateBullet(int x, int y, int w, int h, int owner, int type) {
+void gCanvas::generateBullet(int x, int y, int w, int h, int owner, int type, int damage) {
 	Bullet newbullet;
 	if(activebullets.size() > 0) newbullet.id = activebullets[activebullets.size() - 1].id + 1;
 	else newbullet.id = 0;
@@ -562,7 +594,7 @@ void gCanvas::generateBullet(int x, int y, int w, int h, int owner, int type) {
 	}
 	newbullet.x = x;
 	newbullet.y = y;
-	newbullet.damage = 100;
+	newbullet.damage = damage;
 	newbullet.speed = owner == OWNER_PLAYER ? 10 : -10;
 	newbullet.owner = owner;
 	newbullet.ishit = false;
@@ -652,14 +684,17 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 	}
 
 	if(type == COL_PE) {
-		for(auto enemy : enemies) {
-			checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
-			if(checkcol) {
-				player.ishit = true;
-				player.health -= power;
-				return checkcol;
-			}
-		}
+        for(auto& enemy : enemies) {
+            checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
+            if(checkcol) {
+                player.ishit = true;
+                player.health -= enemy.damage;
+                if(player.health > 0) {
+                    enemy.health = 0;
+                }
+                return checkcol;
+            }
+        }
 	}
 
 	if(type == COL_EB) {

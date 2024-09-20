@@ -58,6 +58,7 @@ private:
 		float x, y, w, h;
 		float speed;
 		float health;
+		float damage;
 		bool upkey, downkey, leftkey, rightkey;
 		int animcounter, animframeno;
 		bool ishit;
@@ -137,7 +138,7 @@ private:
 
 	void generateGold(int x, int y, int w, int h);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
-	void generateBullet(int x, int y, int w, int h, int owner, int type);
+	void generateBullet(int x, int y, int w, int h, int owner, int type, int damage);
 	void generateEnemy();
 
 	void goldAnimator(Gold &gold, int maxanimframe);
@@ -157,6 +158,8 @@ private:
 	gImage goldpanelimage;
 	gImage bulletimage[3];
 	gImage enemyimage[maxenemytypenum];
+	gImage healthbarimage;
+	gImage healthfillimage;
 
 
 	Background background[BACKGROUND_COUNT];
@@ -164,6 +167,7 @@ private:
 	Player player;
 	Panel puanpanel, goldpanel, text[2];
 	Bullet playerbullet;
+	Panel healthbar;
 
 	std::vector<Gold> activegolds;
 	std::vector<Bullet> activebullets;
@@ -185,6 +189,7 @@ private:
     };
 
     bool checkcol;
+
 
     // Enemy
     std::vector<Enemy> enemies;
