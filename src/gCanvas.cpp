@@ -20,7 +20,7 @@ void gCanvas::setup() {
 	setupGame();
 	setupBackground();
 	setupPlayer();
-	setupGold();
+	setupDrops();
 	setupExplosion();
 	setupPanel();
 	setupBullet();
@@ -31,19 +31,19 @@ void gCanvas::setup() {
 
 void gCanvas::update() {
 	updateBackground();
-	updateGold();
+	updateDrops();
 	updatePlayer();
 	updateExplosion();
 	updateBullet();
 	generateEnemy();
 	updateEnemy();
-	gLogi("gCanvas") << "keyPressed:" << player.health;
+//	gLogi("gCanvas") << "keyPressed:" << player.health;
 }
 
 void gCanvas::draw() {
 	drawBackground();
 	drawPlayer();
-	drawGold();
+	drawDrops();
 	drawExplosion();
 	drawPanel();
 	drawBullet();
@@ -110,6 +110,8 @@ void gCanvas::mousePressed(int x, int y, int button) {
 		if(x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
 		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
 			if(!gamebutton[i].pressed) {
+				// Play button sound
+				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 				// Ýlgili tuþa basýlýyor ve pressed durumu güncelleniyor
 				switch(i) {
 					case BUTTON_LEFT:
@@ -192,6 +194,8 @@ void gCanvas::setupGame() {
 	mapright = getWidth();
 	maptop = 0;
 	mapbottom = getHeight();
+
+	root->soundManager(root->SOUND_GAME, 100, root->SOUND_TYPE_STARTING);
 }
 
 void gCanvas::setupBackground() {
@@ -314,16 +318,19 @@ void gCanvas::setupGameButtons() {
 	}
 }
 
-void gCanvas::setupGold() {
-	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
-		goldimage[i].loadImage("golds/" + gToStr(i + 1) + ".png");
-	}
-}
-
 void gCanvas::setupBullet() {
 	bulletimage[0].loadImage("cat_shot_1.png");
 	bulletimage[1].loadImage("suit_alien_shot_1.png");
 	bulletimage[2].loadImage("ufo_alien_shot_1.png");
+}
+
+void gCanvas::setupDrops() {
+	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
+		goldimage[i].loadImage("golds/" + gToStr(i + 1) + ".png");
+	}
+	for(int i = 0; i < POWER_BUFF_FRAME_COUNT; i++) {
+		powerbuffimage[i].loadImage("power_" + gToStr(i + 1) + ".png");
+	}
 }
 
 void gCanvas::setupPanel() {
@@ -368,18 +375,6 @@ void gCanvas::updateBackground() {
 	}
 }
 
-void gCanvas::updateGold() {
-	for(int i = 0; i < activegolds.size(); i++) {
-		Gold& gold = activegolds[i];
-
-		gold.x -= gold.speed;
-		goldAnimator(gold, GOLD_FRAME_COUNT);
-
-		gold.iscollide = checkCollision(gold.x, gold.y, gold.w, gold.h, COL_GP);
-		if(gold.iscollide || (gold.x + gold.w) < mapleft) activegolds.erase(activegolds.begin() + i);
-	}
-}
-
 void gCanvas::updatePlayer() {
 	// Movement
 	if(player.upkey && player.y > maptop) player.y -= 1 * player.speed;
@@ -407,7 +402,8 @@ void gCanvas::updateEnemy() {
 			// Increase score
 			player.score++;
 			// Generate drop
-			generateGold(enemy.x, enemy.y, enemy.w, enemy.h);
+			int choosedrop = (int)gRandom(2);
+			generateDrop(enemy.x, enemy.y, enemy.w, enemy.h, choosedrop);
 			// Generate explosion
 			generateExplosion(enemy.x, enemy.y, enemy.w, enemy.h);
 			// Delete
@@ -427,6 +423,20 @@ void gCanvas::updateEnemy() {
 
 	}
 }
+
+void gCanvas::updateDrops() {
+	for(int i = 0; i < activedrops.size(); i++) {
+		Drop& drop = activedrops[i];
+
+		drop.x -= drop.speed;
+		if(drop.id == DROP_GOLD) goldAnimator(drop, GOLD_FRAME_COUNT);
+		if(drop.id == DROP_POWER_BUFF) powerBuffAnimator(drop, POWER_BUFF_FRAME_COUNT);
+
+		drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
+		if(drop.iscollide || (drop.x + drop.w) < mapleft) activedrops.erase(activedrops.begin() + i);
+	}
+}
+
 void gCanvas::generateEnemy() {
 	spawnctr++;
 	if(spawnctr > spawnctrlimit){
@@ -511,12 +521,6 @@ void gCanvas::drawGameButtons() {
 	}
 }
 
-void gCanvas::drawGold() {
-	for(const auto& gold : activegolds) {
-		goldimage[gold.animframeno].draw(gold.x, gold.y, gold.w, gold.h);
-	}
-}
-
 void gCanvas::drawExplosion() {
 	for(int i = 0; i < activeExplosion.size(); i++) {
 		explosionImage.drawSub(activeExplosion[i][EX_X],
@@ -535,6 +539,15 @@ void gCanvas::drawBullet() {
 	}
 }
 
+void gCanvas::drawDrops() {
+	for(const auto& drop : activedrops) {
+		if(drop.id == DROP_GOLD) {
+			goldimage[drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
+		}
+		if(drop.id == DROP_POWER_BUFF) powerbuffimage[drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
+	}
+}
+
 void gCanvas::drawPanel() {
 	puanpanelimage.draw(puanpanel.x, puanpanel.y, puanpanel.w, puanpanel.h);
 	goldpanelimage.draw(goldpanel.x, goldpanel.y, goldpanel.w, goldpanel.h);
@@ -549,23 +562,28 @@ void gCanvas::drawPanel() {
     healthfillimage.draw(healthbar.x, healthbar.y, fillWidth, healthbar.h);
 }
 
-void gCanvas::generateGold(int x, int y, int w, int h) {
-	Gold newgold;
+void gCanvas::generateDrop(int x, int y, int w, int h, int id) {
+	Drop newdrop;
 
-	newgold.w = goldimage[0].getWidth();
-	newgold.h = goldimage[0].getHeight();
-	newgold.x = x + ((w - newgold.w) / 2);
-	newgold.y = y + ((h - newgold.h) / 2);
-	newgold.animcounter = 0;
-	newgold.animframeno = 0;
-	newgold.iscollide = false;
-	newgold.speed = 5;
+	newdrop.w = goldimage[0].getWidth();
+	newdrop.h = goldimage[0].getHeight();
+	newdrop.x = x + ((w - newdrop.w) / 2);
+	newdrop.y = y + ((h - newdrop.h) / 2);
+	newdrop.animcounter = 0;
+	newdrop.animframeno = 0;
+	newdrop.iscollide = false;
+	newdrop.speed = 5;
+	newdrop.id = id;
 
-	activegolds.push_back(newgold);
+	activedrops.push_back(newdrop);
 }
 
 void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,
 		int explosionh) {
+
+	// Play explosion sound
+	root->soundManager(root->SOUND_EXPLOSION, 100, root->SOUND_TYPE_ONHIT);
+	// Generate explosion.
 	newexplosion.push_back(explosionx);
 	newexplosion.push_back(explosiony);
 	newexplosion.push_back(explosionw);
@@ -601,16 +619,10 @@ void gCanvas::generateBullet(int x, int y, int w, int h, int owner, int type, in
 	newbullet.type = type;
 
 	activebullets.push_back(newbullet);
-}
 
-void gCanvas::goldAnimator(Gold &gold, int maxanimframe) {
-	gold.animcounter++;
-
-	if(gold.animcounter % 4 == 0) {
-		gold.animframeno++;
-		if(gold.animframeno >= maxanimframe) gold.animframeno = 0;
-		gold.animcounter = 0;
-	}
+	// Play bullet sound.
+	if(owner == OWNER_ENEMY) root->soundManager(root->SOUND_ENEMY_FIRE, 100, root->SOUND_TYPE_ONHIT);
+	if(owner == OWNER_PLAYER) root->soundManager(root->SOUND_CAT_FIRE, 100, root->SOUND_TYPE_ONHIT);
 }
 
 void gCanvas::playerAnimator(Player &player, int startanimframe, int maxanimframe, int animtype) {
@@ -719,9 +731,15 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 		}
 	}
 
-	if(type == COL_GP) {
+	if(type == COL_D) {
 		checkcol = gCheckCollision(x, y, x + w, y + h, player.x, player.y, player.x + player.w, player.y + player.h);
-		player.gold++;
+		if(id == DROP_GOLD && checkcol) {
+			player.gold++;
+			root->soundManager(root->SOUND_COIN, 100, root->SOUND_TYPE_ONHIT);
+		}
+		if(id == DROP_POWER_BUFF && checkcol) {
+			root->soundManager(root->SOUND_POWERUP, 100, root->SOUND_TYPE_ONHIT);
+		}
 		return checkcol;
 	}
 
@@ -733,5 +751,25 @@ void gCanvas::playerAnimControl() {
 	if(player.ishit) {
 		playerAnimator(player, 2, 3, PLAYER_HURT);
 		player.ishit = cooldown(player.cooldown, player.cooldowntimer);
+	}
+}
+
+void gCanvas::powerBuffAnimator(Drop &powerbuff, int maxanimframe) {
+	powerbuff.animcounter++;
+
+	if(powerbuff.animcounter % 4 == 0) {
+		powerbuff.animframeno++;
+		if(powerbuff.animframeno >= maxanimframe) powerbuff.animframeno = 0;
+		powerbuff.animcounter = 0;
+	}
+}
+
+void gCanvas::goldAnimator(Drop &gold, int maxanimframe) {
+	gold.animcounter++;
+
+	if(gold.animcounter % 4 == 0) {
+		gold.animframeno++;
+		if(gold.animframeno >= maxanimframe) gold.animframeno = 0;
+		gold.animcounter = 0;
 	}
 }

@@ -20,6 +20,8 @@ menuCanvas::~menuCanvas() {
 void menuCanvas::setup() {
 	setupMenu();
 	setupButton();
+
+	root->soundManager(root->SOUND_MENU, 100, root->SOUND_TYPE_STARTING);
 }
 
 void menuCanvas::update() {
@@ -60,6 +62,8 @@ void menuCanvas::mousePressed(int x, int y, int button) {
 void menuCanvas::mouseReleased(int x, int y, int button) {
 	if(buttongroup[0].pressed && x > buttongroup[0].x && x < (buttongroup[0].x + buttongroup[0].w) && y > buttongroup[0].y && y < (buttongroup[0].y + buttongroup[0].h)) {
 		buttongroup[0].pressed = false;
+		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
+		root->soundManager(root->SOUND_MENU, 100, root->SOUND_TYPE_ENDING);
 		gCanvas* main = new gCanvas(root);
 		appmanager->setCurrentCanvas(main);
 	}

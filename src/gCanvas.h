@@ -47,12 +47,13 @@ private:
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
-	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_FRAME_COUNT = 4;
+	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_BUFF_FRAME_COUNT = 4;
 	static const int PLAYER_IDLE = 0, PLAYER_HURT = 1;
+	static const int DROP_GOLD = 0, DROP_POWER_BUFF = 1;
 	static const int BACKGROUND_COUNT = 2;
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
-	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_GP = 4, COL_PP = 5;
+	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
 
 	struct Player {
 		float x, y, w, h;
@@ -78,7 +79,6 @@ private:
 		bool canshoot;
 		int cooldown, cooldowntimer;
 		int type;
-
 	};
 
 	struct Bullet {
@@ -90,7 +90,8 @@ private:
 		int type;
 	};
 
-	struct Gold {
+	struct Drop {
+		int id;
 		int x, y, w, h;
 		int speed;
 		int animcounter, animframeno;
@@ -113,35 +114,36 @@ private:
 	void setupGame();
 	void setupBackground();
 	void setupGameButtons();
-	void setupGold();
 	void setupPlayer();
 	void setupExplosion();
 	void setupPanel();
 	void setupBullet();
 	void setupEnemy();
+	void setupDrops();
 
 	void updateBackground();
-	void updateGold();
 	void updatePlayer();
     void updateExplosion();
     void updateBullet();
     void updateEnemy();
+	void updateDrops();
 
 	void drawBackground();
 	void drawGameButtons();
-	void drawGold();
 	void drawPlayer();
     void drawExplosion();
     void drawPanel();
     void drawBullet();
     void drawEnemy();
+	void drawDrops();
 
-	void generateGold(int x, int y, int w, int h);
+	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
 	void generateBullet(int x, int y, int w, int h, int owner, int type, int damage);
 	void generateEnemy();
 
-	void goldAnimator(Gold &gold, int maxanimframe);
+	void goldAnimator(Drop &gold, int maxanimframe);
+	void powerBuffAnimator(Drop &powerbuff, int maxanimframe);
 	void playerAnimator(Player &player, int startanimframe, int maxanimframe, int animtype);
 	bool cooldown(int &time, int &timer);
 	void spawnEnemy(int type);
@@ -153,6 +155,7 @@ private:
 	gImage playerimg[PLAYER_FRAME_COUNT];
 	gImage gamebuttonimage[BUTTON_COUNT];
 	gImage goldimage[GOLD_FRAME_COUNT];
+	gImage powerbuffimage[POWER_BUFF_FRAME_COUNT];
 	gImage explosionImage;
 	gImage puanpanelimage;
 	gImage goldpanelimage;
@@ -169,7 +172,7 @@ private:
 	Bullet playerbullet;
 	Panel healthbar;
 
-	std::vector<Gold> activegolds;
+	std::vector<Drop> activedrops;
 	std::vector<Bullet> activebullets;
 
 	int mapleft, mapright, maptop, mapbottom;
@@ -189,7 +192,6 @@ private:
     };
 
     bool checkcol;
-
 
     // Enemy
     std::vector<Enemy> enemies;
