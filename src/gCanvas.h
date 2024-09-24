@@ -14,6 +14,8 @@
 #include "vector"
 #include "thread"
 
+#include "iostream"
+#include "chrono"
 
 class gCanvas : public gBaseCanvas {
 public:
@@ -47,14 +49,16 @@ private:
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
-	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_FRAME_COUNT = 4;
+	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_BUFF_FRAME_COUNT = 4;
 	static const int PLAYER_IDLE = 0, PLAYER_HURT = 1;
+	static const int DROP_GOLD = 0, DROP_POWER_BUFF = 1;
 	static const int BACKGROUND_COUNT = 2;
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
-	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_GP = 4, COL_PP = 5;
+	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
 	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
+
 
 	struct Player {
 		float x, y, w, h;
@@ -66,7 +70,8 @@ private:
 		bool ishit;
 		bool canshoot;
 		bool deadanimplayed;
-		int cooldown, cooldowntimer;
+		float cooldown, cooldowntimer;
+
 		int level;
 		int gold, score;
 		int energy;
@@ -79,7 +84,7 @@ private:
 		float damage;
 		bool isalive;
 		bool canshoot;
-		int cooldown, cooldowntimer;
+		float cooldown, cooldowntimer;
 		int type;
 		int level;
 	};
@@ -93,7 +98,8 @@ private:
 		int type;
 	};
 
-	struct Gold {
+	struct Drop {
+		int id;
 		int x, y, w, h;
 		int speed;
 		int animcounter, animframeno;
@@ -101,7 +107,7 @@ private:
 	};
 
 	struct Background {
-		int x, y, w, h;
+		float x, y, w, h;
 	};
 
 	struct Buttons {
@@ -116,49 +122,52 @@ private:
 	void setupGame();
 	void setupBackground();
 	void setupGameButtons();
-	void setupGold();
 	void setupPlayer();
 	void setupExplosion();
 	void setupPanel();
 	void setupBullet();
 	void setupEnemy();
-	void setupPausePanel();
+	void setupDrops();
 	void setupLevel();
+	void setupPausePanel();
 
 	void updateBackground();
-	void updateGold();
 	void updatePlayer();
     void updateExplosion();
     void updateBullet();
     void updateEnemy();
+	void updateDrops();
 
 	void drawBackground();
 	void drawGameButtons();
-	void drawGold();
 	void drawPlayer();
     void drawExplosion();
     void drawPanel();
     void drawBullet();
     void drawEnemy();
+	void drawDrops();
     void drawPausePanel();
 
-	void generateGold(int x, int y, int w, int h);
+	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
 	void generateBullet(int x, int y, int w, int h, int owner, int type, int damage);
 	void generateEnemy();
 
-	void goldAnimator(Gold &gold, int maxanimframe);
-	void playerAnimator(Player &player, int startanimframe, int maxanimframe, int animtype);
-	bool cooldown(int &time, int &timer);
+	void animator(int &animcounter, int &animframeno, int startframe, int framecount, float targetfps);
+	bool cooldown(float &time, float &timer);
 	void spawnEnemy(int type);
-	void playerAnimControl();
 
 	bool checkCollision(int x, int y, int w, int h, int type, int power = 0, int id = 0);
 
-	gImage backgroundimage;
+	void calculateFPS();
+	float getFPS();
+
+	gImage backgroundimage[2];
 	gImage playerimg[PLAYER_FRAME_COUNT];
 	gImage gamebuttonimage[BUTTON_COUNT];
 	gImage goldimage[GOLD_FRAME_COUNT];
+	gImage powerbuffimage[POWER_BUFF_FRAME_COUNT];
+	gImage dropimage[2][10];
 	gImage explosionImage;
 	gImage puanpanelimage;
 	gImage goldpanelimage;
@@ -183,9 +192,10 @@ private:
 	Panel energytext;
 	Panel energybar;
 
-	std::vector<Gold> activegolds;
+	std::vector<Drop> activedrops;
 	std::vector<Bullet> activebullets;
 
+	float backgroundspeed;
 	int mapleft, mapright, maptop, mapbottom;
 	int buttongap;
 	int gamestate;
@@ -195,6 +205,15 @@ private:
 
 	gFont panelfont;
 	std::string goldtext, puantext;
+    std::string healthText = "100%";
+    std::string energyText = "0%";
+
+	// Fps things
+    std::chrono::high_resolution_clock::time_point previousFrameTime;
+    std::chrono::high_resolution_clock::time_point currentFrameTime;
+	float deltatime;
+	float fps;
+	float targetfps;
 
     // Explosion
     int explosionframew, explosionframeh, explosionmaxframe;
@@ -208,9 +227,6 @@ private:
 
     bool checkcol;
 
-    std::string healthText = "100%";
-    std::string energyText = "0%";
-
     // Enemy
     std::vector<Enemy> enemies;
     float enemyspeeds[maxenemytypenum];
@@ -219,12 +235,11 @@ private:
     float enemycooldown[maxenemytypenum];
     float enemycooldowntimer[maxenemytypenum];
     int currentenemylevel;
-
     int enemiesToSpawn;
     int remainingEnemies;
+
     int spawnctr = 0;
     int spawnctrlimit = 120;
-
     bool showNextLevelMessage;
     int waitTimer;
 };
