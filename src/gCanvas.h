@@ -53,13 +53,13 @@ private:
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
 	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_GP = 4, COL_PP = 5;
-	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1;
+	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
 
 	struct Player {
 		float x, y, w, h;
 		float speed;
-		float health;
+		int health;
 		float damage;
 		bool upkey, downkey, leftkey, rightkey;
 		int animcounter, animframeno;
@@ -67,7 +67,7 @@ private:
 		bool canshoot;
 		bool deadanimplayed;
 		int cooldown, cooldowntimer;
-
+		int level;
 		int gold, score;
 		int energy;
 	};
@@ -81,7 +81,7 @@ private:
 		bool canshoot;
 		int cooldown, cooldowntimer;
 		int type;
-
+		int level;
 	};
 
 	struct Bullet {
@@ -123,6 +123,7 @@ private:
 	void setupBullet();
 	void setupEnemy();
 	void setupPausePanel();
+	void setupLevel();
 
 	void updateBackground();
 	void updateGold();
@@ -217,9 +218,15 @@ private:
     float enemyhealths[maxenemytypenum];
     float enemycooldown[maxenemytypenum];
     float enemycooldowntimer[maxenemytypenum];
+    int currentenemylevel;
 
+    int enemiesToSpawn;
+    int remainingEnemies;
     int spawnctr = 0;
     int spawnctrlimit = 120;
+
+    bool showNextLevelMessage;
+    int waitTimer;
 };
 
 #endif /* GCANVAS_H_ */

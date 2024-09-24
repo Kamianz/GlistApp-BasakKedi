@@ -28,6 +28,7 @@ void gCanvas::setup() {
 
 	setupGameButtons();
 	setupPausePanel();
+	setupLevel();
 }
 
 void gCanvas::update() {
@@ -40,6 +41,21 @@ void gCanvas::update() {
 		generateEnemy();
 		updateEnemy();
 	}
+    if(gamestate == GAMESTATE_WAITFORNEXTLEVEL) {
+        player.x = 50;
+        player.y = (getHeight() - player.h) / 2;
+    	activebullets.clear();
+        if(waitTimer > 0) {
+            waitTimer--;
+        } else {
+
+
+            showNextLevelMessage = false;
+            currentenemylevel++;
+            setupLevel();
+            gamestate = GAMESTATE_PLAY;
+        }
+    }
 }
 
 void gCanvas::draw() {
@@ -55,6 +71,14 @@ void gCanvas::draw() {
 	if(gamestate == GAMESTATE_PAUSE){
 		drawPausePanel();
 	}
+    if(showNextLevelMessage) {
+        std::string message = "Daha zor dusmanlar geliyor!";
+        float textWidth = panelfont.getStringWidth(message);
+        float textX = (getWidth() - textWidth) / 2;
+        float textY = getHeight() / 2;
+
+        panelfont.drawText(message, textX, textY);
+    }
 }
 
 void gCanvas::keyPressed(int key) {
@@ -213,6 +237,8 @@ void gCanvas::setupGame() {
 	maptop = 0;
 	mapbottom = getHeight();
 	gamestate = GAMESTATE_PLAY;
+	waitTimer = 0;
+	showNextLevelMessage = false;
 }
 void gCanvas::setupPausePanel() {
 	pausepanelimage.loadImage("gui/pausemenu.png");
@@ -273,6 +299,7 @@ void gCanvas::setupPlayer() {
 	player.cooldowntimer = 0;
 	player.damage = 120;
 	player.energy = 0;
+	player.level = 1;
 
 	player.gold = 0;
 	player.score = 0;
@@ -321,6 +348,7 @@ void gCanvas::setupEnemy() {
 	enemycooldowntimer[SUIT_PURPLE] = 0;
 	enemycooldowntimer[SUIT_ORANGE] = 0;
 
+	currentenemylevel = 1;
 }
 
 void gCanvas::setupExplosion() {
@@ -399,7 +427,7 @@ void gCanvas::setupPanel() {
 
     healthtext.w = panelfont.getStringWidth(healthText);
     healthtext.h = panelfont.getStringHeight(healthText);
-    healthtext.x = healthbar.x + (healthbar.w / 2) - (healthtext.w / 2);
+    healthtext.x = healthbar.x + 15;
     healthtext.y = healthbar.y + (healthbar.h / 2) + (healthtext.h / 4);
 
     energybar.w = healthbarimage.getWidth() * healthbarsizeratio;
@@ -414,7 +442,7 @@ void gCanvas::setupPanel() {
 
     energytext.w = panelfont.getStringWidth(energyText);
     energytext.h = panelfont.getStringHeight(energyText);
-    energytext.x = energybar.x + (energybar.w / 2) - (energytext.w / 2);
+    energytext.x = energybar.x + 15;
     energytext.y = energybar.y + (energybar.h / 2) + (energytext.h / 4);
 
 	puantext = "0";
@@ -466,6 +494,12 @@ void gCanvas::updatePlayer() {
 
 //	checkCollision(player.x, player.y, player.w, player.h, COL_PB);
 }
+void gCanvas::setupLevel() {
+	enemiesToSpawn = 10 + (currentenemylevel - 1) * 5;
+	remainingEnemies = enemiesToSpawn;
+
+    spawnctr = 0;
+}
 
 void gCanvas::updateEnemy() {
 	for(int i = 0; i < enemies.size(); i++){
@@ -475,11 +509,19 @@ void gCanvas::updateEnemy() {
 			// Increase score
 			player.score++;
 			// Generate drop
+			remainingEnemies--;
 			generateGold(enemy.x, enemy.y, enemy.w, enemy.h);
 			// Generate explosion
 			generateExplosion(enemy.x, enemy.y, enemy.w, enemy.h);
 			// Delete
 			enemies.erase(enemies.begin() + i);
+
+            if(remainingEnemies <= 0) {
+            	gamestate = GAMESTATE_WAITFORNEXTLEVEL;
+            	waitTimer = 180;
+            	showNextLevelMessage = true;
+
+            }
 		}
 		// Enemy movement.
 		enemy.x -= enemy.speed;
@@ -496,14 +538,17 @@ void gCanvas::updateEnemy() {
 	}
 }
 void gCanvas::generateEnemy() {
-	spawnctr++;
-	if(spawnctr > spawnctrlimit){
-		spawnctr = 0;
-		int type = int(gRandom(float(maxenemytypenum)));
-		spawnEnemy(type);
-	}
-
+    if (remainingEnemies > 0 && enemiesToSpawn > 0) {
+        spawnctr++;
+        if (spawnctr > spawnctrlimit) {
+            spawnctr = 0;
+            int type = int(gRandom(float(maxenemytypenum)));
+            spawnEnemy(type);
+            enemiesToSpawn--;
+        }
+    }
 }
+
 
 void gCanvas::updateExplosion() {
 	for(int i = 0; i < activeExplosion.size(); i++) {
@@ -614,14 +659,21 @@ void gCanvas::drawPanel() {
     healthbarimage.draw(healthbar.x, healthbar.y, healthbar.w, healthbar.h);
     float healthPercentage = std::max(0.0f, std::min(static_cast<float>(player.health) / 1000.0f, 1.0f));
     float fillWidthHealth = healthfill.w * healthPercentage;
-    healthText = gToStr(int(healthPercentage * 100)) + "%";
+    healthText = gToStr(player.health) + " / 1000";
 // Energy
     healthbarimage.draw(energybar.x, energybar.y, energybar.w, energybar.h);
     float energyPercentage = std::max(0.0f, std::min(static_cast<float>(player.energy) / 500.0f, 1.0f));
     float fillWidthEnergy = energyfill.w * energyPercentage;
-    energyText = gToStr(int(energyPercentage * 100)) + "%";
+    energyText = gToStr(player.energy) + " / 500";
+
+    std::string remainingText = "Remaining Enemies: " + std::to_string(remainingEnemies);
+    float textWidth = panelfont.getStringWidth(remainingText);
+    float textX = (getWidth() - textWidth) / 2;
+    float textY = 50;
 
 
+
+    panelfont.drawText(remainingText, textX, textY);
     healthfillimage.draw(healthfill.x, healthfill.y, fillWidthHealth, healthfill.h);
     panelfont.drawText(healthText, healthtext.x, healthtext.y);
     energyfillimage.draw(energyfill.x, energyfill.y, fillWidthEnergy, energyfill.h);
@@ -743,6 +795,7 @@ bool gCanvas::cooldown(int &time, int &timer) {
 
 void gCanvas::spawnEnemy(int type) {
 	Enemy newenemy;
+	newenemy.level = currentenemylevel;
 	newenemy.w = enemyimage[type].getWidth();
 	newenemy.h = enemyimage[type].getHeight();
 	newenemy.x = getWidth();
@@ -764,6 +817,7 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 		if(checkcol) {
 			player.ishit = true;
 			player.health -= power;
+			player.health = std::max(player.health, 0);
 			return checkcol;
 		}
 	}
@@ -774,8 +828,10 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
             if(checkcol) {
                 player.ishit = true;
                 player.health -= enemy.damage;
+                player.health = std::max(player.health, 0);
 	            player.energy += 25;
 	            player.energy = std::min(player.energy, 500);
+
                 if(player.health > 0) {
                     enemy.health = 0;
                 }
