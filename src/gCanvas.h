@@ -58,7 +58,7 @@ private:
 	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
 	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
-
+	static const int CITY = 0, SKY = 1;
 
 	struct Player {
 		float x, y, w, h;
@@ -242,6 +242,7 @@ private:
     int spawnctrlimit = 120;
     bool showNextLevelMessage;
     int waitTimer;
+    float mapyvelocity;
 };
 
 #endif /* GCANVAS_H_ */

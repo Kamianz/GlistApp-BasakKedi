@@ -32,31 +32,35 @@ void gCanvas::setup() {
 }
 
 void gCanvas::update() {
-	if(gamestate == GAMESTATE_PLAY){
-		updateBackground();
-		updateDrops();
-		updatePlayer();
-		updateExplosion();
-		updateBullet();
-		generateEnemy();
-		updateEnemy();
-	}
-	if(gamestate == GAMESTATE_WAITFORNEXTLEVEL) {
-		player.x = 50;
-		player.y = (getHeight() - player.h) / 2;
-		activebullets.clear();
-		if(waitTimer > 0) {
-			waitTimer--;
-		} else {
-			showNextLevelMessage = false;
-			currentenemylevel++;
-			setupLevel();
-			gamestate = GAMESTATE_PLAY;
-		}
-	}
+    if (gamestate == GAMESTATE_PLAY) {
+        updateBackground();
+        updateDrops();
+        updatePlayer();
+        updateExplosion();
+        updateBullet();
+        generateEnemy();
+        updateEnemy();
+    }
+    if (gamestate == GAMESTATE_WAITFORNEXTLEVEL) {
+        player.x = 50;
+        player.y = (getHeight() - player.h) / 2;
+        activebullets.clear();
+        if (waitTimer > 0) {
+            waitTimer--;
+        } else {
+            showNextLevelMessage = false;
+            currentenemylevel++;
+            setupLevel();
+
+            gamestate = GAMESTATE_PLAY;
+        }
+    }
 }
 
+
+
 void gCanvas::draw() {
+
 	calculateFPS();
 
 	//
@@ -69,9 +73,7 @@ void gCanvas::draw() {
     drawEnemy();
     drawGameButtons();
 
-	if(gamestate == GAMESTATE_PAUSE){
-		drawPausePanel();
-	}
+
 
     if(showNextLevelMessage) {
         std::string message = "Daha zor dusmanlar geliyor!";
@@ -84,6 +86,9 @@ void gCanvas::draw() {
 	//
 
     previousFrameTime = currentFrameTime;
+    if(gamestate == GAMESTATE_PAUSE){
+    		drawPausePanel();
+    	}
 }
 
 void gCanvas::keyPressed(int key) {
@@ -277,20 +282,21 @@ void gCanvas::setupPausePanel() {
 }
 
 void gCanvas::setupBackground() {
-	backgroundimage[0].loadImage("city_1.png");
-	backgroundimage[1].loadImage("city_1.png");
+	backgroundimage[CITY].loadImage("city_1.png");
+	backgroundimage[SKY].loadImage("space_1.png");
 
-	background[0].w = backgroundimage[0].getWidth();
-	background[0].h = backgroundimage[0].getHeight();
-	background[0].x = 0;
-	background[0].y = 0;
+	background[CITY].w = getWidth();
+	background[CITY].h = getHeight();
+	background[CITY].x = 0;
+	background[CITY].y = 0;
 
-	background[1].w = backgroundimage[1].getWidth();
-	background[1].h = backgroundimage[1].getHeight();
-	background[1].x = getWidth();
-	background[1].y = 0;
+    background[SKY].w = getWidth();
+    background[SKY].h = getHeight();
+    background[SKY].x = 0;
+    background[SKY].y = -background[SKY].h;
 
-	backgroundspeed = 4.5f;
+    backgroundspeed = 4.5f;
+    mapyvelocity = 4.0f;
 }
 void gCanvas::setupPlayer() {
 	playerimg[0].loadImage("yellow_idle_1.png");
@@ -325,6 +331,7 @@ void gCanvas::setupPlayer() {
 }
 
 void gCanvas::setupEnemy() {
+
 	enemyimage[UFO_RED].loadImage("red_ufo_idle_1.png");
 	enemyimage[UFO_BLACK].loadImage("black_ufo_idle_1.png");
 	enemyimage[UFO_GREEN].loadImage("green_ufo_idle_1.png");
@@ -483,22 +490,42 @@ void gCanvas::setupPanel() {
 }
 
 void gCanvas::setupLevel() {
-	enemiesToSpawn = 10 + (currentenemylevel - 1) * 5;
-	remainingEnemies = enemiesToSpawn;
-
+    enemiesToSpawn = 10 + (currentenemylevel - 1) * 5;
+    remainingEnemies = enemiesToSpawn;
     spawnctr = 0;
+    float levelMultiplier = 1.0f + (currentenemylevel * 0.1f);
+
+    for (int type = 0; type < maxenemytypenum; type++) {
+        enemyspeeds[type] *= levelMultiplier;
+        enemyhealths[type] *= levelMultiplier;
+        enemydamages[type] *= levelMultiplier;
+    }
+
 }
+
 
 void gCanvas::updateBackground() {
-	for(int i = 0; i < BACKGROUND_COUNT; i++) {
-		background[i].x -= backgroundspeed;
+    if (currentenemylevel % 10 >= 5) {
+        if (background[SKY].y < 0) {
+            background[SKY].y += mapyvelocity;
+            background[CITY].y += mapyvelocity;
+        }
+    }
+    if (currentenemylevel % 10 < 5) {
+        if (background[CITY].y > 0) {
+            background[CITY].y -= mapyvelocity;
+            background[SKY].y -= mapyvelocity;
 
-		if ((background[i].x + background[i].w) < 0) {
-			background[i].x = getWidth();
-		}
-	}
+    }
+    }
+        background[CITY].x -= backgroundspeed;
+        background[SKY].x -= backgroundspeed;
+        if (background[CITY].x + background[CITY].w < 0) {
+            background[CITY].x = 0;
+            background[SKY].x = 0;
+        }
+
 }
-
 
 void gCanvas::updatePlayer() {
     if (player.upkey && player.y > maptop) player.y -= 1 * player.speed;
@@ -579,12 +606,22 @@ void gCanvas::generateEnemy() {
         spawnctr++;
         if (spawnctr > spawnctrlimit) {
             spawnctr = 0;
-            int type = int(gRandom(float(maxenemytypenum)));
+            std::vector<int> allowedEnemies;
+            if (currentenemylevel % 10 >= 5) {
+                allowedEnemies = {UFO_RED, UFO_BLACK, UFO_GREEN};
+            } else {
+                allowedEnemies = {SUIT_BLACK, SUIT_PURPLE, SUIT_ORANGE};
+            }
+
+            int randomIndex = int(gRandom(float(allowedEnemies.size())));
+            int type = allowedEnemies[randomIndex];
+
             spawnEnemy(type);
             enemiesToSpawn--;
         }
     }
 }
+
 
 void gCanvas::updateExplosion() {
     for (int i = 0; i < activeExplosion.size(); i++) {
@@ -646,10 +683,16 @@ void gCanvas::drawEnemy() {
 }
 
 void gCanvas::drawBackground() {
-    for(int i = 0; i < BACKGROUND_COUNT; i++) {
-        backgroundimage[i].draw(background[i].x, background[i].y, background[i].w, background[i].h);
+    backgroundimage[CITY].draw(background[CITY].x, background[CITY].y, background[CITY].w, background[CITY].h);
+    backgroundimage[SKY].draw(background[SKY].x, background[SKY].y, background[SKY].w, background[SKY].h);
+    if (background[CITY].x + background[CITY].w < getWidth()) {
+        backgroundimage[CITY].draw(background[CITY].x + background[CITY].w, background[CITY].y, background[CITY].w, background[CITY].h);
+        backgroundimage[SKY].draw(background[SKY].x + background[SKY].w, background[SKY].y, background[SKY].w, background[SKY].h);
     }
+
+
 }
+
 
 void gCanvas::drawGameButtons() {
 	for(int i = 0; i < BUTTON_COUNT; i++) {
