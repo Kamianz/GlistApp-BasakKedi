@@ -2,13 +2,14 @@
  * gCanvas.h
  *
  *  Created on: September 17, 2024
- *      Author: Kadir Semih Arslan, Mehmet Furkan Utlu
+ *      Author: Kadir Semih Arslan, Mehmet Furkan Utlu, Onur Imre
  */
 
 #ifndef GCANVAS_H_
 #define GCANVAS_H_
 
 #include "gBaseCanvas.h"
+#include "menuCanvas.h"
 #include "gApp.h"
 #include "gImage.h"
 #include "vector"
@@ -47,6 +48,7 @@ private:
 	static const int maxenemytypenum = 6;
 	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
+	static const int CITY = 0, SKY = 1;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
 	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_BUFF_FRAME_COUNT = 4;
@@ -56,24 +58,32 @@ private:
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
 	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
-	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2;
+	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2, GAMESTATE_MARKET = 3, GAMESTATE_WARNING = 4, GAMESTATE_EXIT = 5;
+    static const int MARKET_HEALTH = 0, MARKET_DAMAGE = 1, MARKET_ATTACK_SPEED = 2, MARKET_GOLD_MULTIPLIER = 3, MARKET_BUFF_MULTIPLIER = 4;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
-	static const int CITY = 0, SKY = 1;
+    static const int WARNING_NOT_SELECTED = -1, WARNING_NO = 0, WARNING_YES = 1;
+    static const int POWER_UP_TIME = 3;
+    static const int TRANSITION_STEPS = 255;
+    static const int MARKET_SLOTS = 5;
 
 	struct Player {
 		float x, y, w, h;
 		float speed;
-		int health;
+		int health, maxhealth;
 		float damage;
 		bool upkey, downkey, leftkey, rightkey;
 		int animcounter, animframeno;
 		bool ishit;
 		bool canshoot;
 		bool deadanimplayed;
-		float cooldown, cooldowntimer;
+		bool powerup;
+		float cooldown, cooldowntimer, cooldownholder;
+		float buffcooldown, buffcooldowntimer, buffcooldownholder;
+		float hurtcooldown, hurtcooldowntimer, hurtcooldownholder;
 
 		int level;
 		int gold, score;
+		float goldmultiplier, buffmultiplier;
 		int energy;
 	};
 
@@ -84,7 +94,7 @@ private:
 		float damage;
 		bool isalive;
 		bool canshoot;
-		float cooldown, cooldowntimer;
+		float cooldown, cooldowntimer, cooldownholder;
 		int type;
 		int level;
 	};
@@ -130,6 +140,8 @@ private:
 	void setupDrops();
 	void setupLevel();
 	void setupPausePanel();
+    void setupWarning();
+    void setupMarket();
 
 	void updateBackground();
 	void updatePlayer();
@@ -147,6 +159,8 @@ private:
     void drawEnemy();
 	void drawDrops();
     void drawPausePanel();
+    void drawMarket();
+    void drawWarning();
 
 	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
@@ -154,10 +168,16 @@ private:
 	void generateEnemy();
 
 	void animator(int &animcounter, int &animframeno, int startframe, int framecount, float targetfps);
-	bool cooldown(float &time, float &timer);
+	bool cooldown(float &time, float &timer, float savedtime = 0);
 	void spawnEnemy(int type);
+    void enablePowerUp(float &time);
+    void enablePlayerHit(float &time);
+	void marketBuy(int slot, int money);
+    void changeGameState(int gamestate);
 
 	bool checkCollision(int x, int y, int w, int h, int type, int power = 0, int id = 0);
+	int getRandomDrop();
+	int clamp(int value, int min, int max);
 
 	void calculateFPS();
 	float getFPS();
@@ -178,10 +198,11 @@ private:
 	gImage energyfillimage;
 	gImage pausepanelimage;
 	gImage settingsbutton[2];
-
+    gImage warningimage;
+    gImage marketpanelimage;
+    gImage marketslotimage;
 
 	Background background[BACKGROUND_COUNT];
-	Buttons gamebutton[BUTTON_COUNT];
 	Player player;
 	Panel puanpanel, goldpanel, text[2];
 	Bullet playerbullet;
@@ -191,10 +212,20 @@ private:
 	Panel energyfill;
 	Panel energytext;
 	Panel energybar;
+    Panel marketpanel;
+    Panel marketslot[MARKET_SLOTS];
+    Panel markettext[MARKET_SLOTS];
+    Panel warning;
+    Buttons marketbutton[MARKET_SLOTS];
+    Buttons marketclosebutton;
+	Buttons gamebutton[BUTTON_COUNT];
+    Buttons warningbutton[2];
 
 	std::vector<Drop> activedrops;
 	std::vector<Bullet> activebullets;
 
+    bool powerup;
+    float poweruptimes, poweruptimer;
 	float backgroundspeed;
 	int mapleft, mapright, maptop, mapbottom;
 	int buttongap;
@@ -202,11 +233,20 @@ private:
 	int pausepanelx, pausepanely, pausepanelw, pausepanelh;
 	int settingsbuttonstate;
 	int settingsbuttonx, settingsbuttony[2], settingsbuttonw, settingsbuttonh[2];
+    int marketcost[MARKET_SLOTS];
+    int xcenter[2], ycenter[2], radius[2];
+    int lastgamestate;
 
 	gFont panelfont;
+    gFont marketfont;
+    gFont marketcostfont;
+    gFont warningfont;
 	std::string goldtext, puantext;
     std::string healthText = "100%";
     std::string energyText = "0%";
+    std::string markettexts[MARKET_SLOTS];
+
+    gColor powercolor;
 
 	// Fps things
     std::chrono::high_resolution_clock::time_point previousFrameTime;
