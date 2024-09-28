@@ -45,6 +45,7 @@ public:
 private:
 	gApp* root;
 
+	static const int backgroundlevellimit = 5;
 	static const int maxenemytypenum = 6;
 	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
@@ -80,9 +81,9 @@ private:
 		float cooldown, cooldowntimer, cooldownholder;
 		float buffcooldown, buffcooldowntimer, buffcooldownholder;
 		float hurtcooldown, hurtcooldowntimer, hurtcooldownholder;
-
+		int maxenergy;
 		int level;
-		int gold, score;
+		float gold, score;
 		float goldmultiplier, buffmultiplier;
 		int energy;
 	};
@@ -97,6 +98,7 @@ private:
 		float cooldown, cooldowntimer, cooldownholder;
 		int type;
 		int level;
+		bool hitBySpecial;
 	};
 
 	struct Bullet {
@@ -128,6 +130,15 @@ private:
 	struct Panel {
 		int x, y, w, h;
 	};
+	struct SpecialAbility {
+	    float radius;
+	    float maxRadius;
+	    float centerX;
+	    float centerY;
+	    bool active;
+	    float r, g, b, alpha;
+	};
+
 
 	void setupGame();
 	void setupBackground();
@@ -149,6 +160,8 @@ private:
     void updateBullet();
     void updateEnemy();
 	void updateDrops();
+	void updateDifficultyMessage();
+	void updateSpecialAbility();
 
 	void drawBackground();
 	void drawGameButtons();
@@ -161,6 +174,8 @@ private:
     void drawPausePanel();
     void drawMarket();
     void drawWarning();
+    void drawDifficultyMessage();
+    void drawSpecialAbility();
 
 	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
@@ -174,6 +189,7 @@ private:
     void enablePlayerHit(float &time);
 	void marketBuy(int slot, int money);
     void changeGameState(int gamestate);
+    void activateSpecialAbility();
 
 	bool checkCollision(int x, int y, int w, int h, int type, int power = 0, int id = 0);
 	int getRandomDrop();
@@ -220,9 +236,11 @@ private:
     Buttons marketclosebutton;
 	Buttons gamebutton[BUTTON_COUNT];
     Buttons warningbutton[2];
+    SpecialAbility special;
 
 	std::vector<Drop> activedrops;
 	std::vector<Bullet> activebullets;
+	std::vector<SpecialAbility> specials;
 
     bool powerup;
     float poweruptimes, poweruptimer;
@@ -283,6 +301,9 @@ private:
     bool showNextLevelMessage;
     int waitTimer;
     float mapyvelocity;
+
+	bool showDifficultyIncreaseMessage;
+	int difficultyMessageFrames;
 };
 
 #endif /* GCANVAS_H_ */
