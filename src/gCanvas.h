@@ -138,6 +138,9 @@ private:
 	    bool active;
 	    float r, g, b, alpha;
 	};
+	struct Boss{
+		int x, y, w, h;
+	};
 
 
 	void setupGame();
@@ -162,6 +165,8 @@ private:
 	void updateDrops();
 	void updateDifficultyMessage();
 	void updateSpecialAbility();
+	void updateGoldAnimation(Drop &drop);
+
 
 	void drawBackground();
 	void drawGameButtons();
@@ -176,6 +181,7 @@ private:
     void drawWarning();
     void drawDifficultyMessage();
     void drawSpecialAbility();
+    void drawGoldAnimation(Drop &drop);
 
 	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);

@@ -35,6 +35,7 @@ void gCanvas::setup() {
 
 void gCanvas::update() {
 	if(gamestate == GAMESTATE_PLAY){
+		calculateFPS();
         updateBackground();
         updateDrops();
         updatePlayer();
@@ -49,7 +50,7 @@ void gCanvas::update() {
 }
 
 void gCanvas::draw() {
-	calculateFPS();
+
 	//
     drawBackground();
     drawPlayer();
@@ -259,12 +260,11 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 		}
 		if(warningbutton[WARNING_YES].pressed == true){
 			if(lastgamestate == GAMESTATE_PAUSE) {
-				gLogi("Here2");
 				menuCanvas* menu = new menuCanvas(root);
 				appmanager->setCurrentCanvas(menu);
 			}
 			if(lastgamestate == GAMESTATE_MARKET) {
-				gLogi("Here2");
+
 				changeGameState(GAMESTATE_MARKET);
 			}
 			warningbutton[WARNING_YES].pressed = false;
@@ -404,12 +404,12 @@ void gCanvas::setupEnemy() {
 	enemyimage[SUIT_PURPLE].loadImage("purple_suit_idle_1.png");
 	enemyimage[SUIT_ORANGE].loadImage("orange_suit_idle_1.png");
 
-	enemyspeeds[UFO_RED] = 6.0f;
-	enemyspeeds[UFO_BLACK] = 5.5f;
-	enemyspeeds[UFO_GREEN] = 5.0f;
-	enemyspeeds[SUIT_BLACK] = 4.5f;
-	enemyspeeds[SUIT_PURPLE] = 4.0f;
-	enemyspeeds[SUIT_ORANGE] = 4.2f;
+	enemyspeeds[UFO_RED] = 3.0f;
+	enemyspeeds[UFO_BLACK] = 2.5f;
+	enemyspeeds[UFO_GREEN] = 2.0f;
+	enemyspeeds[SUIT_BLACK] = 1.5f;
+	enemyspeeds[SUIT_PURPLE] = 1.0f;
+	enemyspeeds[SUIT_ORANGE] = 1.2f;
 
 	enemydamages[UFO_RED] = 25.0f;
 	enemydamages[UFO_BLACK] = 20.0f;
@@ -426,12 +426,12 @@ void gCanvas::setupEnemy() {
 	enemyhealths[SUIT_PURPLE] = 100.0f;
 	enemyhealths[SUIT_ORANGE] = 110.0f;
 
-	enemycooldown[UFO_RED] = 6.0f;
-	enemycooldown[UFO_BLACK] = 5.0f;
-	enemycooldown[UFO_GREEN] = 5.5f;
-	enemycooldown[SUIT_BLACK] = 4.0f;
-	enemycooldown[SUIT_PURPLE] = 4.5f;
-	enemycooldown[SUIT_ORANGE] = 4.7f;
+	enemycooldown[UFO_RED] = 3.0f;
+	enemycooldown[UFO_BLACK] = 2.0f;
+	enemycooldown[UFO_GREEN] = 2.5f;
+	enemycooldown[SUIT_BLACK] = 2.0f;
+	enemycooldown[SUIT_PURPLE] = 2.5f;
+	enemycooldown[SUIT_ORANGE] = 2.7f;
 
 	enemycooldowntimer[UFO_RED] = 0;
 	enemycooldowntimer[UFO_BLACK] = 0;
@@ -485,12 +485,10 @@ void gCanvas::setupBullet() {
 
 void gCanvas::setupDrops() {
 	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
-		goldimage[i].loadImage("golds/" + gToStr(i + 1) + ".png");
-		dropimage[0][i].loadImage("golds/" + gToStr(i + 1) + ".png");
+		dropimage[DROP_GOLD][i].loadImage("golds/" + gToStr(i + 1) + ".png");
 	}
 	for(int i = 0; i < POWER_BUFF_FRAME_COUNT; i++) {
-		powerbuffimage[i].loadImage("power_" + gToStr(i + 1) + ".png");
-		dropimage[1][i].loadImage("power_" + gToStr(i + 1) + ".png");
+		dropimage[DROP_POWER_BUFF][i].loadImage("power_" + gToStr(i + 1) + ".png");
 	}
 }
 
@@ -558,16 +556,21 @@ void gCanvas::setupLevel() {
     remainingEnemies = enemiesToSpawn;
     spawnctr = 0;
 
-    float enemymaxSpeed = 10.0f;
-    float enemyminSpeed = 0;
+    float enemymaxSpeed = 5.0f;
+    float enemyminSpeed = 1.0f;
+    float maxAttackCooldown = 2.0f;
+    float minAttackCooldown = 0.5f;
 
     for (int type = 0; type < maxenemytypenum; type++) {
         enemyspeeds[type] = std::max(enemyminSpeed, std::min(enemyspeeds[type] * (1.0f + currentenemylevel * 0.05f), enemymaxSpeed));
-        enemycooldown[type] = std::max(1.0f, enemymaxSpeed - enemyspeeds[type]);
+
+        enemycooldown[type] = std::max(minAttackCooldown, std::min(maxAttackCooldown, maxAttackCooldown - (currentenemylevel * 0.05f)));
+
         enemyhealths[type] *= (1.0f + currentenemylevel * 0.05f);
         enemydamages[type] *= (1.0f + currentenemylevel * 0.05f);
     }
 }
+
 
 void gCanvas::updateBackground() {
     if (currentenemylevel % (backgroundlevellimit * 2) >= backgroundlevellimit) {
@@ -665,16 +668,34 @@ void gCanvas::updateEnemy() {
 }
 
 void gCanvas::updateDrops() {
-	for(int i = 0; i < activedrops.size(); i++) {
-		Drop& drop = activedrops[i];
+    for (int i = 0; i < activedrops.size(); i++) {
+        Drop &drop = activedrops[i];
 
-		drop.x -= drop.speed;
-		if(drop.id == DROP_GOLD) animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
-		if(drop.id == DROP_POWER_BUFF) animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
+        drop.x -= drop.speed;
 
-		drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
-		if(drop.iscollide || (drop.x + drop.w) < mapleft) activedrops.erase(activedrops.begin() + i);
-	}
+        if (drop.id == DROP_GOLD) {
+            updateGoldAnimation(drop);
+        }
+
+        drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
+        if (drop.iscollide || (drop.x + drop.w) < mapleft) {
+            activedrops.erase(activedrops.begin() + i);
+        }
+    }
+}
+void gCanvas::updateGoldAnimation(Drop &drop) {
+    int frameCount = 10;
+    int animationSpeed = 5;
+
+    drop.animcounter++;
+
+    if (drop.animcounter >= animationSpeed) {
+        drop.animframeno = (drop.animframeno + 1) % frameCount;
+        drop.animcounter = 0;
+    }
+}
+void gCanvas::drawGoldAnimation(Drop &drop) {
+    dropimage[DROP_GOLD][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
 }
 
 void gCanvas::generateEnemy() {
@@ -759,12 +780,27 @@ void gCanvas::drawPlayer() {
 }
 
 void gCanvas::drawEnemy() {
-	for(int i = 0; i < enemies.size(); i++){
-		Enemy& enemy = enemies[i];
-		enemyimage[enemy.type].draw(enemy.x, enemy.y, enemy.w, enemy.h);
-	}
+    for (int i = 0; i < enemies.size(); i++) {
+        Enemy& enemy = enemies[i];
 
+        enemyimage[enemy.type].draw(enemy.x, enemy.y, enemy.w, enemy.h);
+
+        float healthPercentage = std::max(0.0f, std::min(enemy.health / enemyhealths[enemy.type], 1.0f));
+
+        if (healthPercentage < 1.0f) {
+            float barWidth = enemy.w * 0.6f;
+            float barHeight = 8.0f;
+            float barX = enemy.x + (enemy.w - barWidth) / 2;
+            float barY = enemy.y - 15;
+
+            healthbarimage.draw(barX, barY, barWidth, barHeight * 2);
+
+            healthfillimage.draw(barX + 5, barY + 5, (barWidth - 10) * healthPercentage, barHeight);
+        }
+    }
 }
+
+
 
 void gCanvas::drawBackground() {
     backgroundimage[CITY].draw(background[CITY].x, background[CITY].y, background[CITY].w, background[CITY].h);
@@ -800,10 +836,16 @@ void gCanvas::drawBullet() {
 }
 
 void gCanvas::drawDrops() {
-	for(int i = 0; i < activedrops.size(); i++) {
-		Drop drop = activedrops[i];
-		dropimage[drop.id][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
-	}
+    for (int i = 0; i < activedrops.size(); i++) {
+        Drop &drop = activedrops[i];
+
+        if (drop.id == DROP_GOLD) {
+            drawGoldAnimation(drop);
+        }
+        else {
+            dropimage[drop.id][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
+        }
+    }
 }
 
 void gCanvas::drawPanel() {
@@ -845,8 +887,8 @@ void gCanvas::drawPausePanel() {
 void gCanvas::generateDrop(int x, int y, int w, int h, int id) {
 	Drop newdrop;
 
-	newdrop.w = goldimage[0].getWidth();
-	newdrop.h = goldimage[0].getHeight();
+	newdrop.w = dropimage[id][0].getWidth();
+	newdrop.h = dropimage[id][0].getHeight();
 	newdrop.x = x + ((w - newdrop.w) / 2);
 	newdrop.y = y + ((h - newdrop.h) / 2);
 	newdrop.animcounter = 0;
@@ -921,8 +963,8 @@ bool gCanvas::cooldown(float &time, float &timer, float savedtime) {
 void gCanvas::spawnEnemy(int type) {
 	Enemy newenemy;
 	newenemy.level = currentenemylevel;
-	newenemy.w = enemyimage[type].getWidth();
-	newenemy.h = enemyimage[type].getHeight();
+	newenemy.w = enemyimage[type].getWidth() * 0.8f;
+	newenemy.h = enemyimage[type].getHeight() * 0.8f;
 	newenemy.x = getWidth();
 	newenemy.y = int(gRandom(float(getHeight() - newenemy.h)));
 	newenemy.type = type;
@@ -974,7 +1016,7 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 			checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
 			if(checkcol) {
 				enemy.health -= power;
-	            player.energy += 25;
+	            player.energy += power / 6;
 	            player.energy = std::min(player.energy, 400);
 				return checkcol;
 			}
@@ -1279,19 +1321,19 @@ void gCanvas::updateSpecialAbility() {
             Bullet& bullet = activebullets[j];
             if (bullet.owner == OWNER_ENEMY) {
                 float distance = sqrt(pow(bullet.x - special.centerX, 2) + pow(bullet.y - special.centerY, 2));
-                if (distance <= special.radius) {
+
+                if (fabs(distance - special.radius) <= 10.0f) {
                     activebullets.erase(activebullets.begin() + j);
                     j--;
                 }
             }
-
         }
 
         for (int k = 0; k < enemies.size(); k++) {
             Enemy& enemy = enemies[k];
             float distance = sqrt(pow(enemy.x - special.centerX, 2) + pow(enemy.y - special.centerY, 2));
 
-            if (distance <= special.radius && !enemy.hitBySpecial) {
+            if (fabs(distance - special.radius) <= 10.0f && !enemy.hitBySpecial) {
                 enemy.health -= player.damage;
                 enemy.hitBySpecial = true;
             }
