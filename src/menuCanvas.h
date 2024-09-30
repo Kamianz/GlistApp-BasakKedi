@@ -41,6 +41,10 @@ public:
 private:
 	gApp* root;
 
+	int gamestate;
+	static const int GAMESTATE_START = 0, GAMESTATE_WARNING = 1;
+    static const int WARNING_NOT_SELECTED = -1, WARNING_NO = 0, WARNING_YES = 1;
+
 	struct ImageObject {
 		int x, y, w, h;
 	};
@@ -48,17 +52,28 @@ private:
 	struct ButtonObject {
 		int x, y, w, h;
 		int pressed;
+		int centerx, centery, radius;
+	};
+
+	struct Panel {
+		int x, y, w, h;
 	};
 
 	ImageObject background[2];
 	ImageObject logo;
 	ImageObject player;
+    Panel warning;
 	ButtonObject buttongroup[1];
+	ButtonObject warningbutton[2];
 
 	gImage backgroundimage;
 	gImage logoimage;
 	gImage playerimage;
 	gImage playbutton;
+	gImage warningimage;
+
+    gFont warningfont;
+	std::vector<int> isdead;
 
 	void setupMenu();
 	void updateMenu();
@@ -67,6 +82,16 @@ private:
 	void setupButton();
 	void updateButton();
 	void drawButton();
+
+
+    void soundTest(int soundnum);
+    int onhitsoundnum = 2;
+
+    void setupContinuePanel();
+    void drawContinuePanel();
+    bool saveControl();
+    void deleteSave(int id);
+    void startGame();
 };
 
 #endif /* MENU_CANVAS_H_ */

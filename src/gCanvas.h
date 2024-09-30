@@ -59,13 +59,14 @@ private:
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
 	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
-	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2, GAMESTATE_MARKET = 3, GAMESTATE_WARNING = 4, GAMESTATE_EXIT = 5;
+	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2, GAMESTATE_MARKET = 3, GAMESTATE_WARNING = 4, GAMESTATE_EXIT = 5, GAMESTATE_END_GAME = 6;
     static const int MARKET_HEALTH = 0, MARKET_DAMAGE = 1, MARKET_ATTACK_SPEED = 2, MARKET_GOLD_MULTIPLIER = 3, MARKET_BUFF_MULTIPLIER = 4;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
     static const int WARNING_NOT_SELECTED = -1, WARNING_NO = 0, WARNING_YES = 1;
     static const int POWER_UP_TIME = 3;
     static const int TRANSITION_STEPS = 255;
     static const int MARKET_SLOTS = 5;
+    static const int END_GAME_PANEL_COUNT = 4, END_GAME_BUTTON_RESTART = 0, END_GAME_BUTTON_MENU = 1;
 
 	struct Player {
 		float x, y, w, h;
@@ -81,11 +82,12 @@ private:
 		float cooldown, cooldowntimer, cooldownholder;
 		float buffcooldown, buffcooldowntimer, buffcooldownholder;
 		float hurtcooldown, hurtcooldowntimer, hurtcooldownholder;
-		int maxenergy;
+
 		int level;
-		float gold, score;
+		float gold, totalgold, score;
 		float goldmultiplier, buffmultiplier;
-		int energy;
+		int energy, maxenergy;
+		bool isdead;
 	};
 
 	struct Enemy {
@@ -125,11 +127,13 @@ private:
 	struct Buttons {
 		int x, y, w, h;
 		bool pressed;
+		int centerx, centery, radius;
 	};
 
 	struct Panel {
 		int x, y, w, h;
 	};
+
 	struct SpecialAbility {
 	    float radius;
 	    float maxRadius;
@@ -138,10 +142,18 @@ private:
 	    bool active;
 	    float r, g, b, alpha;
 	};
+
 	struct Boss{
 		int x, y, w, h;
 	};
 
+	struct Datas {
+		int id, health, damage, level, healthlevel, damagelevel, attackspeedlevel, goldmultiplierlevel, buffmultiplierlevel, score, gold, isdead, enemylevel;
+	};
+
+	struct Multiplier {
+		float healthmultiplier, damagemultiplier, attackspeedmultiplier, goldmultipliermultiplier, buffmultipliermultiplier;
+	};
 
 	void setupGame();
 	void setupBackground();
@@ -156,6 +168,7 @@ private:
 	void setupPausePanel();
     void setupWarning();
     void setupMarket();
+    void setupEndPanel();
 
 	void updateBackground();
 	void updatePlayer();
@@ -166,7 +179,6 @@ private:
 	void updateDifficultyMessage();
 	void updateSpecialAbility();
 	void updateGoldAnimation(Drop &drop);
-
 
 	void drawBackground();
 	void drawGameButtons();
@@ -179,9 +191,9 @@ private:
     void drawPausePanel();
     void drawMarket();
     void drawWarning();
+    void drawEndPanel();
     void drawDifficultyMessage();
     void drawSpecialAbility();
-    void drawGoldAnimation(Drop &drop);
 
 	void generateDrop(int x, int y, int w, int h, int id);
 	void generateExplosion(int explosionx, int explosiony, int explosionw, int explosionh);
@@ -193,7 +205,7 @@ private:
 	void spawnEnemy(int type);
     void enablePowerUp(float &time);
     void enablePlayerHit(float &time);
-	void marketBuy(int slot, int money);
+	void marketBuy(int slot, float &gold);
     void changeGameState(int gamestate);
     void activateSpecialAbility();
 
@@ -203,6 +215,14 @@ private:
 
 	void calculateFPS();
 	float getFPS();
+	void increaseGold(int quantity);
+	void increaseScore(int quantity);
+	void decreaseGold(int quantity);
+	void decreaseScore(int quantity);
+
+	void calculateStar();
+	std::string createInsertStatement(const Player& player);
+	void loadGame(std::vector<int> data);
 
 	gImage backgroundimage[2];
 	gImage playerimg[PLAYER_FRAME_COUNT];
@@ -223,6 +243,8 @@ private:
     gImage warningimage;
     gImage marketpanelimage;
     gImage marketslotimage;
+    gImage marketclosebuttonimage;
+    gImage endgamepanelimage[END_GAME_PANEL_COUNT];
 
 	Background background[BACKGROUND_COUNT];
 	Player player;
@@ -238,15 +260,21 @@ private:
     Panel marketslot[MARKET_SLOTS];
     Panel markettext[MARKET_SLOTS];
     Panel warning;
+    Panel endgamepanel;
+    Panel endgamelistpanel;
     Buttons marketbutton[MARKET_SLOTS];
     Buttons marketclosebutton;
 	Buttons gamebutton[BUTTON_COUNT];
     Buttons warningbutton[2];
     SpecialAbility special;
+    Buttons endgamebutton[2];
+    Datas gamedatas;
+    Multiplier multiplier;
 
 	std::vector<Drop> activedrops;
 	std::vector<Bullet> activebullets;
 	std::vector<SpecialAbility> specials;
+	std::vector<int> saveddata;
 
     bool powerup;
     float poweruptimes, poweruptimer;
@@ -260,15 +288,20 @@ private:
     int marketcost[MARKET_SLOTS];
     int xcenter[2], ycenter[2], radius[2];
     int lastgamestate;
+    int endgamestar;
+    int onhitsoundnum = 2;
 
 	gFont panelfont;
     gFont marketfont;
     gFont marketcostfont;
     gFont warningfont;
+    gFont endgamefont;
 	std::string goldtext, puantext;
     std::string healthText = "100%";
     std::string energyText = "0%";
     std::string markettexts[MARKET_SLOTS];
+    static const int END_GAME_LIST_NUMBER = 6;
+    std::string endgamelist[END_GAME_LIST_NUMBER];
 
     gColor powercolor;
 

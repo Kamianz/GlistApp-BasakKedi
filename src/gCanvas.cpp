@@ -14,28 +14,34 @@ gCanvas::gCanvas(gApp* root) : gBaseCanvas(root) {
 }
 
 gCanvas::~gCanvas() {
+	root->insertDatabase(createInsertStatement(player));
 }
 
 void gCanvas::setup() {
+	saveddata = root->getIsDead();
+	loadGame(saveddata);
+
 	setupGame();
 	setupBackground();
 	setupPlayer();
 	setupDrops();
 	setupExplosion();
-	setupPanel();
 	setupBullet();
 	setupEnemy();
 	setupLevel();
 
+	setupPanel();
 	setupGameButtons();
 	setupPausePanel();
 	setupMarket();
 	setupWarning();
+	setupEndPanel();
 }
 
 void gCanvas::update() {
+	calculateFPS();
+	//
 	if(gamestate == GAMESTATE_PLAY){
-		calculateFPS();
         updateBackground();
         updateDrops();
         updatePlayer();
@@ -46,41 +52,38 @@ void gCanvas::update() {
         updateSpecialAbility();
     	updateDifficultyMessage();
 	}
-
 }
 
 void gCanvas::draw() {
-
-	//
     drawBackground();
     drawPlayer();
     drawDrops();
-    drawPanel();
     drawExplosion();
     drawBullet();
     drawEnemy();
+
+    drawGameButtons();
     drawSpecialAbility();
     if(gamestate == GAMESTATE_PLAY){
     	drawDifficultyMessage();
-        drawGameButtons();
+//        drawGameButtons();
     }
+    drawPanel();
     if(gamestate == GAMESTATE_MARKET) drawMarket();
 	if(gamestate == GAMESTATE_PAUSE) drawPausePanel();
     if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT) drawWarning();
-
+    if(gamestate == GAMESTATE_END_GAME) drawEndPanel();
 	//
-
     previousFrameTime = currentFrameTime;
 }
 
 void gCanvas::keyPressed(int key) {
-//	if(key == 32) {
-////		generateExplosion(player.x, player.y, 128, 128);
-//		if(player.canshoot){
-//			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
-//			player.canshoot = false;
-//		}
-//	}
+	//	if(key == 32) {
+	//		if(player.canshoot){
+	//			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
+	//			player.canshoot = false;
+	//		}
+	//	}
     if(key == 32) {
         if (player.energy >= player.maxenergy / 2) {
             activateSpecialAbility();
@@ -89,15 +92,19 @@ void gCanvas::keyPressed(int key) {
     }
 	if(key == 87) {
 		player.upkey = true;
+		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
 	}
 	if(key == 83) {
 		player.downkey = true;
+		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
 	}
 	if(key == 65) {
 		player.leftkey = true;
+		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
 	}
 	if(key == 68) {
 		player.rightkey = true;
+		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
 	}
 
 	if(key == 256){
@@ -136,42 +143,40 @@ void gCanvas::mouseDragged(int x, int y, int button) {
 }
 
 void gCanvas::mousePressed(int x, int y, int button) {
-	for(int i = 0; i < BUTTON_COUNT; i++) {
-		// Eðer mouse butona týklanýrsa
-		if(x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
-		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
-			if(!gamebutton[i].pressed) {
-				// Play button sound
-				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
-				// Ýlgili tuþa basýlýyor ve pressed durumu güncelleniyor
-				switch(i) {
-					case BUTTON_LEFT:
-						player.leftkey = true;
-						break;
-					case BUTTON_RIGHT:
-						player.rightkey = true;
-						break;
-					case BUTTON_UP:
-						player.upkey = true;
-						break;
-					case BUTTON_DOWN:
-						player.downkey = true;
-						break;
-					case BUTTON_FIRE:
-//						if(player.canshoot){
-//							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER , player.damage);
-//							player.canshoot = false;
-//						}
-						break;
-				}
-				gamebutton[i].pressed = true;
-			}
-		}
-	}
+//	for(int i = 0; i < BUTTON_COUNT; i++) {
+//		if(x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
+//		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
+//			if(!gamebutton[i].pressed) {
+//				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+//				switch(i) {
+//					case BUTTON_LEFT:
+//						player.leftkey = true;
+//						break;
+//					case BUTTON_RIGHT:
+//						player.rightkey = true;
+//						break;
+//					case BUTTON_UP:
+//						player.upkey = true;
+//						break;
+//					case BUTTON_DOWN:
+//						player.downkey = true;
+//						break;
+//					case BUTTON_FIRE:
+////						if(player.canshoot){
+////							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER , player.damage);
+////							player.canshoot = false;
+////						}
+//						break;
+//				}
+//				gamebutton[i].pressed = true;
+//			}
+//		}
+//	}
 
 	if(gamestate == GAMESTATE_PAUSE){
 		if(x > settingsbuttonx && x < settingsbuttonx + settingsbuttonw && y > settingsbuttony[settingsbuttonstate] && y < settingsbuttony[settingsbuttonstate] + settingsbuttonh[settingsbuttonstate]){
 			settingsbuttonstate = (!settingsbuttonstate);
+			root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 		}
 	}
 
@@ -179,11 +184,12 @@ void gCanvas::mousePressed(int x, int y, int button) {
 		for(int i = 0; i < MARKET_SLOTS; i++) {
 			if(x > marketbutton[i].x && x < (marketbutton[i].x + marketbutton[i].w) && y > marketbutton[i].y && y < (marketbutton[i].y + marketbutton[i].h)) {
 				marketbutton[i].pressed = true;
+				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 			}
 		}
-
-		if (pow(x - marketclosebutton.x, 2) + pow(y - marketclosebutton.y, 2) < pow(marketclosebutton.w, 2)) {
+		if (pow(x - marketclosebutton.centerx, 2) + pow(y - marketclosebutton.centery, 2) < pow(marketclosebutton.radius, 2)) {
 			marketclosebutton.pressed = true;
+			root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 		}
 	}
 
@@ -191,7 +197,16 @@ void gCanvas::mousePressed(int x, int y, int button) {
 		for(int i = 0; i < 2; i++) {
 			if (pow(x - xcenter[i], 2) + pow(y - ycenter[i], 2) < pow(radius[i], 2)) {
 				warningbutton[i].pressed = true;
-				gLogi("Here");
+				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+			}
+		}
+	}
+
+	if(gamestate == GAMESTATE_END_GAME) {
+		for(int i = 0; i < 2; i++) {
+			if (pow(x - endgamebutton[i].centerx, 2) + pow(y - endgamebutton[i].centery, 2) < pow(endgamebutton[i].radius, 2)) {
+				endgamebutton[i].pressed = true;
+				root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 			}
 		}
 	}
@@ -235,13 +250,9 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 				marketbutton[i].pressed = false;
 			}
 		}
-
 		if(marketclosebutton.pressed == true) {
-	        showNextLevelMessage = true;
-	        showDifficultyIncreaseMessage = true;
-	        difficultyMessageFrames = 180;
-	        changeGameState(GAMESTATE_PLAY);
-	        marketclosebutton.pressed = false;
+			changeGameState(GAMESTATE_PLAY);
+			marketclosebutton.pressed = false;
 		}
 	}
 
@@ -249,11 +260,9 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 		if (warningbutton[WARNING_NO].pressed == true) {
 			if(lastgamestate == GAMESTATE_PAUSE) {
 				changeGameState(GAMESTATE_PAUSE);
-				gLogi("Here1");
 			}
 			if(lastgamestate == GAMESTATE_MARKET)  {
 				changeGameState(GAMESTATE_MARKET);
-				gLogi("Here1");
 			}
 
 			warningbutton[WARNING_NO].pressed = false;
@@ -264,10 +273,22 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 				appmanager->setCurrentCanvas(menu);
 			}
 			if(lastgamestate == GAMESTATE_MARKET) {
-
 				changeGameState(GAMESTATE_MARKET);
 			}
 			warningbutton[WARNING_YES].pressed = false;
+		}
+	}
+
+	if(gamestate == GAMESTATE_END_GAME) {
+		if(endgamebutton[END_GAME_BUTTON_RESTART].pressed) {
+			gCanvas* cnv = new gCanvas(root);
+			appmanager->setCurrentCanvas(cnv);
+			endgamebutton[END_GAME_BUTTON_RESTART].pressed = false;
+		}
+		if(endgamebutton[END_GAME_BUTTON_MENU].pressed) {
+			menuCanvas* menu = new menuCanvas(root);
+			appmanager->setCurrentCanvas(menu);
+			endgamebutton[END_GAME_BUTTON_MENU].pressed = false;
 		}
 	}
 }
@@ -301,13 +322,15 @@ void gCanvas::setupGame() {
 	maptop = 0;
 	mapbottom = getHeight();
 	changeGameState(GAMESTATE_PLAY);
-
+//	changeGameState(GAMESTATE_END_GAME);
+//	changeGameState(GAMESTATE_MARKET);
 	waitTimer = 0;
-
 	fps = 0;
 	targetfps = 60;
 	showDifficultyIncreaseMessage = false;
 	difficultyMessageFrames = 0;
+	endgamestar = 3;
+
 	root->soundManager(root->SOUND_GAME, 100, root->SOUND_TYPE_STARTING);
 }
 
@@ -372,8 +395,7 @@ void gCanvas::setupPlayer() {
 	player.animframeno = 0;
 	player.ishit = false;
 	player.deadanimplayed = false;
-	player.maxhealth = 300;
-	player.health = player.maxhealth;
+	player.health = player.maxhealth = gamedatas.health;
 	player.maxenergy = 400;
 	player.canshoot = true;
 	player.cooldown = 1;
@@ -385,12 +407,13 @@ void gCanvas::setupPlayer() {
 	player.hurtcooldown = 2;
 	player.hurtcooldowntimer = 0;
 	player.hurtcooldownholder = player.cooldown;
-	player.damage = 120;
+	player.damage = gamedatas.damage;
 
-	player.gold = 0;
-	player.score = 0;
+	player.isdead = gamedatas.isdead;
+	player.gold = gamedatas.gold;
+	player.score = gamedatas.score;
 	player.energy = 0;
-	player.level = 1;
+	player.level = gamedatas.level;
 
 	player.goldmultiplier = 1;
 	player.buffmultiplier = 1;
@@ -418,7 +441,6 @@ void gCanvas::setupEnemy() {
 	enemydamages[SUIT_PURPLE] = 18.0f;
 	enemydamages[SUIT_ORANGE] = 20.0f;
 
-
 	enemyhealths[UFO_RED] = 150.0f;
 	enemyhealths[UFO_BLACK] = 125.0f;
 	enemyhealths[UFO_GREEN] = 140.0f;
@@ -440,8 +462,7 @@ void gCanvas::setupEnemy() {
 	enemycooldowntimer[SUIT_PURPLE] = 0;
 	enemycooldowntimer[SUIT_ORANGE] = 0;
 
-	currentenemylevel = 1;
-
+	currentenemylevel = gamedatas.enemylevel;
 }
 
 void gCanvas::setupExplosion() {
@@ -485,10 +506,12 @@ void gCanvas::setupBullet() {
 
 void gCanvas::setupDrops() {
 	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
-		dropimage[DROP_GOLD][i].loadImage("golds/" + gToStr(i + 1) + ".png");
+		goldimage[i].loadImage("golds/" + gToStr(i + 1) + ".png");
+		dropimage[0][i].loadImage("golds/" + gToStr(i + 1) + ".png");
 	}
 	for(int i = 0; i < POWER_BUFF_FRAME_COUNT; i++) {
-		dropimage[DROP_POWER_BUFF][i].loadImage("power_" + gToStr(i + 1) + ".png");
+		powerbuffimage[i].loadImage("power_" + gToStr(i + 1) + ".png");
+		dropimage[1][i].loadImage("power_" + gToStr(i + 1) + ".png");
 	}
 }
 
@@ -542,7 +565,9 @@ void gCanvas::setupPanel() {
 	energytext.y = energybar.y + (energybar.h / 2) + (energytext.h / 4);
 
 	puantext = gToStr(player.score);
-	goldtext = gToStr(int(player.gold));
+	goldtext = gToStr(player.gold);
+
+	panelfont.loadFont("action_man.ttf", 24);
 
 	text[0].x = puanpanel.x + (puanpanel.w / 2.75f);
 	text[0].y = puanpanel.y + (puanpanel.h - (panelfont.getStringHeight(puantext) / 1.25f));
@@ -555,32 +580,28 @@ void gCanvas::setupLevel() {
     enemiesToSpawn = 10 + (currentenemylevel - 1) * 2;
     remainingEnemies = enemiesToSpawn;
     spawnctr = 0;
-
     float enemymaxSpeed = 5.0f;
     float enemyminSpeed = 1.0f;
     float maxAttackCooldown = 2.0f;
     float minAttackCooldown = 0.5f;
 
-    for (int type = 0; type < maxenemytypenum; type++) {
-        enemyspeeds[type] = std::max(enemyminSpeed, std::min(enemyspeeds[type] * (1.0f + currentenemylevel * 0.05f), enemymaxSpeed));
-
-        enemycooldown[type] = std::max(minAttackCooldown, std::min(maxAttackCooldown, maxAttackCooldown - (currentenemylevel * 0.05f)));
-
+    for(int type = 0; type < maxenemytypenum; type++) {
+    	enemycooldown[type] = std::max(minAttackCooldown, std::min(maxAttackCooldown, maxAttackCooldown - (currentenemylevel * 0.05f)));
+        enemycooldown[type] = std::max(1.0f, enemymaxSpeed - enemyspeeds[type]);
         enemyhealths[type] *= (1.0f + currentenemylevel * 0.05f);
         enemydamages[type] *= (1.0f + currentenemylevel * 0.05f);
     }
 }
 
-
 void gCanvas::updateBackground() {
-    if (currentenemylevel % (backgroundlevellimit * 2) >= backgroundlevellimit) {
-        if (background[SKY].y < 0) {
+    if(currentenemylevel % (backgroundlevellimit * 2) >= backgroundlevellimit) {
+        if(background[SKY].y < 0) {
             background[SKY].y += mapyvelocity;
             background[CITY].y += mapyvelocity;
         }
     }
-    if (currentenemylevel % (backgroundlevellimit * 2) < backgroundlevellimit) {
-        if (background[CITY].y > 0) {
+    if(currentenemylevel % (backgroundlevellimit * 2) < backgroundlevellimit) {
+        if(background[CITY].y > 0) {
             background[CITY].y -= mapyvelocity;
             background[SKY].y -= mapyvelocity;
 
@@ -596,35 +617,45 @@ void gCanvas::updateBackground() {
 
 
 void gCanvas::updatePlayer() {
-    if (player.upkey && player.y > maptop) player.y -= 1 * player.speed;
-    if (player.downkey && (player.y + player.h) < mapbottom) player.y += 1 * player.speed;
-    if (player.leftkey && player.x > mapleft) player.x -= 1 * player.speed;
-    if (player.rightkey && (player.x + player.w) < mapright) player.x += 1 * player.speed;
+    if(player.upkey && player.y > maptop) player.y -= 1 * player.speed;
+    if(player.downkey && (player.y + player.h) < mapbottom) player.y += 1 * player.speed;
+    if(player.leftkey && player.x > mapleft) player.x -= 1 * player.speed;
+    if(player.rightkey && (player.x + player.w) < mapright) player.x += 1 * player.speed;
 
-    if (player.ishit && !player.powerup) {
+    if(player.ishit && !player.powerup) {
         animator(player.animcounter, player.animframeno, 2, 3, 30);
 
         if (player.animframeno == 3) {
             player.animframeno = 0;
             player.ishit = false;
         }
-    } else {
+    }
+    else {
         animator(player.animcounter, player.animframeno, 0, 1, 30);
         player.ishit = checkCollision(player.x, player.y, player.w, player.h, COL_PE);
     }
 
-    if (player.canshoot) {
-        generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
-        player.canshoot = false;
-    }
-
-    if (!player.canshoot) {
-        player.canshoot = cooldown(player.cooldown, player.cooldowntimer, player.cooldownholder);
+	if(player.canshoot){
+		generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
+		player.canshoot = false;
+	}
+	else {
+    	player.canshoot = cooldown(player.cooldown, player.cooldowntimer, player.cooldownholder);
     }
 
     if(player.powerup) {
         bool powerfinish = cooldown(player.buffcooldown, player.buffcooldowntimer, player.buffcooldownholder);
-        if(powerfinish) player.powerup = false;
+        if(powerfinish) {
+        	player.powerup = false;
+			root->soundManager(root->SOUND_POWERDOWN, 100, root->SOUND_TYPE_ONHIT);
+        }
+    }
+
+    if(player.health <= 0) {
+    	player.isdead = true;
+    	calculateStar();
+    	root->soundManager(root->SOUND_LOSE, 100, root->SOUND_TYPE_ONHIT);
+    	changeGameState(GAMESTATE_END_GAME);
     }
 }
 
@@ -648,54 +679,36 @@ void gCanvas::updateEnemy() {
 			enemies.erase(enemies.begin() + i);
 		}
 
-        if (enemy.x > getWidth() * 3 / 4) {
-            enemy.x -= enemy.speed * (targetfps / getFPS());
-        }
+		if (enemy.x > getWidth() * 3 / 4) {
+			enemy.x -= enemy.speed * (targetfps / getFPS());
+		}
 
-        if (!enemy.canshoot) {
-            enemy.canshoot = cooldown(enemy.cooldown, enemy.cooldowntimer, enemy.cooldownholder);
-        } else {
-            int bullettype = enemy.type < 3 ? UFO_ALIEN : SUIT_ALIEN;
-            generateBullet(enemy.x, enemy.y + (enemy.h / 4), enemy.w, enemy.h, OWNER_ENEMY, bullettype, enemy.damage);
-            enemy.canshoot = false;
-        }
+		if (!enemy.canshoot) {
+			enemy.canshoot = cooldown(enemy.cooldown, enemy.cooldowntimer, enemy.cooldownholder);
+		} else {
+			int bullettype = enemy.type < 3 ? UFO_ALIEN : SUIT_ALIEN;
+			generateBullet(enemy.x, enemy.y + (enemy.h / 4), enemy.w, enemy.h, OWNER_ENEMY, bullettype, enemy.damage);
+			enemy.canshoot = false;
+		}
 	}
 	if(remainingEnemies <= 0) {
-	changeGameState(GAMESTATE_MARKET);
-	currentenemylevel++;
-	setupLevel();
+		changeGameState(GAMESTATE_MARKET);
+		currentenemylevel++;
+		setupLevel();
 	}
 }
 
 void gCanvas::updateDrops() {
-    for (int i = 0; i < activedrops.size(); i++) {
-        Drop &drop = activedrops[i];
+	for(int i = 0; i < activedrops.size(); i++) {
+		Drop& drop = activedrops[i];
 
-        drop.x -= drop.speed;
+		drop.x -= drop.speed;
+		if(drop.id == DROP_GOLD) animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
+		if(drop.id == DROP_POWER_BUFF) animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
 
-        if (drop.id == DROP_GOLD) {
-            updateGoldAnimation(drop);
-        }
-
-        drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
-        if (drop.iscollide || (drop.x + drop.w) < mapleft) {
-            activedrops.erase(activedrops.begin() + i);
-        }
-    }
-}
-void gCanvas::updateGoldAnimation(Drop &drop) {
-    int frameCount = 10;
-    int animationSpeed = 5;
-
-    drop.animcounter++;
-
-    if (drop.animcounter >= animationSpeed) {
-        drop.animframeno = (drop.animframeno + 1) % frameCount;
-        drop.animcounter = 0;
-    }
-}
-void gCanvas::drawGoldAnimation(Drop &drop) {
-    dropimage[DROP_GOLD][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
+		drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
+		if(drop.iscollide || (drop.x + drop.w) < mapleft) activedrops.erase(activedrops.begin() + i);
+	}
 }
 
 void gCanvas::generateEnemy() {
@@ -717,7 +730,6 @@ void gCanvas::generateEnemy() {
             enemiesToSpawn--;
         }
     }
-
 }
 
 void gCanvas::updateExplosion() {
@@ -800,8 +812,6 @@ void gCanvas::drawEnemy() {
     }
 }
 
-
-
 void gCanvas::drawBackground() {
     backgroundimage[CITY].draw(background[CITY].x, background[CITY].y, background[CITY].w, background[CITY].h);
     backgroundimage[SKY].draw(background[SKY].x, background[SKY].y, background[SKY].w, background[SKY].h);
@@ -836,16 +846,10 @@ void gCanvas::drawBullet() {
 }
 
 void gCanvas::drawDrops() {
-    for (int i = 0; i < activedrops.size(); i++) {
-        Drop &drop = activedrops[i];
-
-        if (drop.id == DROP_GOLD) {
-            drawGoldAnimation(drop);
-        }
-        else {
-            dropimage[drop.id][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
-        }
-    }
+	for(int i = 0; i < activedrops.size(); i++) {
+		Drop drop = activedrops[i];
+		dropimage[drop.id][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
+	}
 }
 
 void gCanvas::drawPanel() {
@@ -976,6 +980,7 @@ void gCanvas::spawnEnemy(int type) {
 	newenemy.cooldowntimer = enemycooldowntimer[type];
 	newenemy.cooldownholder = newenemy.cooldown;
 	newenemy.canshoot = true;
+
 	newenemy.hitBySpecial = false;
 	enemies.push_back(newenemy);
 }
@@ -1016,7 +1021,7 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 			checkcol = gCheckCollision(x, y, x + w, y + h, enemy.x, enemy.y, enemy.x + enemy.w, enemy.y + enemy.h);
 			if(checkcol) {
 				enemy.health -= power;
-	            player.energy += power / 6;
+				player.energy += power / 6;
 	            player.energy = std::min(player.energy, 400);
 				return checkcol;
 			}
@@ -1036,8 +1041,7 @@ bool gCanvas::checkCollision(int x, int y, int w, int h, int type, int power, in
 	if(type == COL_D) {
 		checkcol = gCheckCollision(x, y, x + w, y + h, player.x, player.y, player.x + player.w, player.y + player.h);
 		if(id == DROP_GOLD && checkcol) {
-			player.gold += 1 * player.goldmultiplier;
-			goldtext = gToStr(int(player.gold));
+			increaseGold(1);
 			root->soundManager(root->SOUND_COIN, 100, root->SOUND_TYPE_ONHIT);
 		}
 		if(id == DROP_POWER_BUFF && checkcol) {
@@ -1130,8 +1134,9 @@ int gCanvas::getRandomDrop() {
 }
 
 void gCanvas::setupMarket() {
-	marketpanelimage.loadImage("gui/marketpanel2.png");
+	marketpanelimage.loadImage("gui/marketpanel.png");
 	marketslotimage.loadImage("gui/marketslot2.png");
+	marketclosebuttonimage.loadImage("gui/closebutton.png");
 
 	marketpanel.w = marketpanelimage.getWidth() * 1.5f;
 	marketpanel.h = marketpanelimage.getHeight() * 1.5f;
@@ -1170,15 +1175,19 @@ void gCanvas::setupMarket() {
 		marketbutton[i].pressed = false;
 	}
 
-	marketcost[MARKET_HEALTH] = 10;
-	marketcost[MARKET_DAMAGE] = 10;
-	marketcost[MARKET_ATTACK_SPEED] = 10;
-	marketcost[MARKET_GOLD_MULTIPLIER] = 10;
-	marketcost[MARKET_BUFF_MULTIPLIER] = 10;
+	marketcost[MARKET_HEALTH] = 10 * gamedatas.healthlevel;
+	marketcost[MARKET_DAMAGE] = 10 * gamedatas.damagelevel;
+	marketcost[MARKET_ATTACK_SPEED] = 10 * gamedatas.attackspeedlevel;
+	marketcost[MARKET_GOLD_MULTIPLIER] = 10 * gamedatas.goldmultiplierlevel;
+	marketcost[MARKET_BUFF_MULTIPLIER] = 10 * gamedatas.buffmultiplierlevel;
 
-	marketclosebutton.w = 50;
-	marketclosebutton.x = marketpanel.x + (marketpanel.w / 2);
-	marketclosebutton.y = marketpanel.y + marketpanel.h - marketclosebutton.w;
+	marketclosebutton.w = 100;
+	marketclosebutton.h = 100;
+	marketclosebutton.x = marketpanel.x + ((marketpanel.w - marketclosebutton.w) / 2);
+	marketclosebutton.y = marketpanel.y + ((marketpanel.h - marketclosebutton.h));
+	marketclosebutton.centerx = marketclosebutton.x + marketclosebutton.w / 2;
+	marketclosebutton.centery = marketclosebutton.y + marketclosebutton.h / 2;
+	marketclosebutton.radius = marketclosebutton.w / 2;
 	marketclosebutton.pressed = false;
 }
 
@@ -1195,37 +1204,42 @@ void gCanvas::drawMarket() {
 		if(marketbutton[i].pressed) renderer->setColor(255, 255, 255);
 	}
 
-	gDrawCircle(marketclosebutton.x, marketclosebutton.y, marketclosebutton.w, true, 100);
+
+	marketclosebuttonimage.draw(marketclosebutton.x, marketclosebutton.y, marketclosebutton.w, marketclosebutton.h);
 }
 
-void gCanvas::marketBuy(int slot, int money) {
-	if(money < marketcost[slot]) {
+void gCanvas::marketBuy(int slot, float &gold) {
+	if(gold < marketcost[slot]) {
 		changeGameState(GAMESTATE_WARNING);
 		return;
 	}
-	player.gold -= marketcost[slot];
+	decreaseGold(marketcost[slot]);
 	marketcost[slot] = static_cast<int>(marketcost[slot] * 1.15f);
 	float temp = player.maxhealth;
 
 	switch(slot) {
 		case MARKET_HEALTH:
-			player.maxhealth *= 1.15f;
+			player.maxhealth *= multiplier.healthmultiplier;
 			player.health += player.maxhealth - temp;
+			markettexts[0] = "Health " + gToStr(player.maxhealth) + " -> " + gToStr(player.maxhealth * multiplier.healthmultiplier);
 			break;
 		case MARKET_DAMAGE:
-			player.damage *= 1.15f;
+			player.damage *= multiplier.damagemultiplier;
+			markettexts[1] = "Damage " + gToStr(player.damage) + " -> " + gToStr(player.damage * multiplier.damagemultiplier);
 			break;
 		case MARKET_ATTACK_SPEED:
-			player.speed /= 1.15f;
+			player.speed /= multiplier.attackspeedmultiplier;
+			markettexts[2] = "Attack Speed " + gToStr(player.cooldownholder) + " -> " + gToStr(player.cooldownholder / multiplier.attackspeedmultiplier);
 			break;
 		case MARKET_GOLD_MULTIPLIER:
-			player.goldmultiplier *= 1.15f;
+			player.goldmultiplier *= multiplier.goldmultipliermultiplier;
+			markettexts[3] = "Gold Multiplier " + gToStr(player.goldmultiplier) + " -> " + gToStr(player.goldmultiplier * multiplier.goldmultipliermultiplier);
 			break;
 		case MARKET_BUFF_MULTIPLIER:
-			player.buffmultiplier *= 1.15f;
+			player.buffmultiplier *= multiplier.buffmultipliermultiplier;
+			markettexts[4] = "Buff Multiplier " + gToStr(player.buffmultiplier) + " -> " + gToStr(player.buffmultiplier * multiplier.buffmultipliermultiplier);
 			break;
 	}
-	goldtext = gToStr(player.gold);
 }
 
 void gCanvas::setupWarning() {
@@ -1269,6 +1283,8 @@ void gCanvas::setupWarning() {
     warningfont.loadFont("action_man.ttf", 18);
 }
 
+
+
 void gCanvas::drawWarning() {
     if(gamestate == GAMESTATE_WARNING) warningimage.draw(warning.x, warning.y, warning.w, warning.h);
     if(gamestate == GAMESTATE_EXIT) warningimage.draw(warning.x, warning.y, warning.w, warning.h); // deðiþtir.
@@ -1282,6 +1298,174 @@ void gCanvas::changeGameState(int gamestate) {
 	lastgamestate = this->gamestate;
 	this->gamestate = gamestate;
 }
+
+void gCanvas::setupEndPanel() {
+	for(int i = 0; i < END_GAME_PANEL_COUNT; i++) {
+		endgamepanelimage[i].loadImage("gui/oyunsonu" + gToStr(i) + ".png");
+	}
+	endgamepanel.w = endgamepanelimage[0].getWidth() * 1.5f;
+	endgamepanel.h = endgamepanelimage[0].getHeight() * 1.5f;
+	endgamepanel.x = (getWidth() - endgamepanel.w) / 2;
+	endgamepanel.y = (getHeight() - endgamepanel.h) / 2;
+
+	endgamebutton[END_GAME_BUTTON_MENU].w = 101;
+	endgamebutton[END_GAME_BUTTON_MENU].h = 101;
+	endgamebutton[END_GAME_BUTTON_MENU].x = endgamepanel.x + ((endgamepanel.w - endgamebutton[END_GAME_BUTTON_MENU].w) / 2) + endgamebutton[END_GAME_BUTTON_MENU].w;
+	endgamebutton[END_GAME_BUTTON_MENU].y = endgamepanel.y + ((endgamepanel.h - endgamebutton[END_GAME_BUTTON_MENU].h));
+
+	endgamebutton[END_GAME_BUTTON_MENU].centerx = endgamebutton[END_GAME_BUTTON_MENU].x + endgamebutton[END_GAME_BUTTON_MENU].w / 2;
+	endgamebutton[END_GAME_BUTTON_MENU].centery = endgamebutton[END_GAME_BUTTON_MENU].y + endgamebutton[END_GAME_BUTTON_MENU].h / 2;
+	endgamebutton[END_GAME_BUTTON_MENU].radius = endgamebutton[END_GAME_BUTTON_MENU].w / 2;
+
+	endgamebutton[END_GAME_BUTTON_RESTART].w = 101;
+	endgamebutton[END_GAME_BUTTON_RESTART].h = 101;
+	endgamebutton[END_GAME_BUTTON_RESTART].x = endgamepanel.x + ((endgamepanel.w - endgamebutton[END_GAME_BUTTON_RESTART].w) / 2) - (endgamebutton[END_GAME_BUTTON_RESTART].w / 1.25f);
+	endgamebutton[END_GAME_BUTTON_RESTART].y = endgamepanel.y + ((endgamepanel.h - endgamebutton[END_GAME_BUTTON_RESTART].h));
+
+	endgamebutton[END_GAME_BUTTON_RESTART].centerx = endgamebutton[END_GAME_BUTTON_RESTART].x + endgamebutton[END_GAME_BUTTON_RESTART].w / 2;
+	endgamebutton[END_GAME_BUTTON_RESTART].centery = endgamebutton[END_GAME_BUTTON_RESTART].y + endgamebutton[END_GAME_BUTTON_RESTART].h / 2;
+	endgamebutton[END_GAME_BUTTON_RESTART].radius = endgamebutton[END_GAME_BUTTON_RESTART].w / 2;
+
+	endgamebutton[END_GAME_BUTTON_MENU].pressed = false;
+	endgamebutton[END_GAME_BUTTON_RESTART].pressed = false;
+
+	// List panel.
+	endgamelistpanel.w = (endgamepanel.w / 1.3f);
+	endgamelistpanel.h = endgamepanel.h / 4;
+	endgamelistpanel.x = endgamepanel.x + ((endgamepanel.w - endgamelistpanel.w) / 2);
+	endgamelistpanel.y = endgamepanel.y + (endgamepanel.h / 2);
+
+	// Load font.
+	endgamefont.loadFont("action_man.ttf", 24);
+
+	// Get database values.
+	root->getTopFiveScores();
+	std::vector<std::string> topfivescore = root->getScore();
+	std::vector<std::string> topfivegold = root->getGold();
+
+	// Edit texts.
+	endgamelist[0] = "Top 5";
+
+	for(int i = 0; i < END_GAME_LIST_NUMBER; i++) {
+		if(topfivescore.size() <= i) {
+			endgamelist[i + 1] = "0 / 0";
+		}
+		else {
+			endgamelist[i + 1] = "Score: " + gToStr(topfivescore[i]) + " / Total Gold: " + gToStr(topfivegold[i]);
+		}
+	}
+}
+
+void gCanvas::drawEndPanel() {
+	endgamepanelimage[endgamestar].draw(endgamepanel.x, endgamepanel.y, endgamepanel.w, endgamepanel.h);
+
+	for(int i = 0; i < END_GAME_LIST_NUMBER; i++) {
+		endgamefont.drawText(endgamelist[i], endgamelistpanel.x + ((endgamelistpanel.w - endgamefont.getStringWidth(endgamelist[i])) / 2), endgamelistpanel.y + (endgamefont.getStringHeight(endgamelist[i]) * (i * 1.75f)));
+	}
+
+//	gDrawRectangle(endgamelistpanel.x, endgamelistpanel.y, endgamelistpanel.w, endgamelistpanel.h);
+//	gDrawRectangle(endgamebutton[END_GAME_BUTTON_RESTART].x, endgamebutton[0].y, endgamebutton[0].w, endgamebutton[0].h);
+//	gDrawRectangle(endgamebutton[END_GAME_BUTTON_MENU].x, endgamebutton[END_GAME_BUTTON_MENU].y, endgamebutton[END_GAME_BUTTON_MENU].w, endgamebutton[END_GAME_BUTTON_MENU].h);
+}
+
+void gCanvas::increaseGold(int quantity) {
+	player.gold += quantity;
+	player.totalgold += quantity;
+	goldtext = gToStr(player.gold);
+}
+
+void gCanvas::increaseScore(int quantity) {
+	player.score += quantity;
+	puantext = gToStr(player.score);
+}
+
+void gCanvas::decreaseGold(int quantity) {
+	player.gold -= quantity;
+	goldtext = gToStr(player.gold);
+}
+
+void gCanvas::decreaseScore(int quantity) {
+	player.score -= quantity;
+	puantext = gToStr(player.score);
+}
+
+void gCanvas::calculateStar() {
+	if(root->getPlayerDataNumber() > 0) {
+		float avgscore = root->getTotalScore() / root->getPlayerDataNumber();
+		float avggold = root->getTotalGold() / root->getPlayerDataNumber();
+
+		float playerscore = player.score;
+		float playergold = player.totalgold;
+
+		float result = (playerscore / avgscore) + (playergold / avggold);
+
+		if(result < 0.5f) endgamestar = 0;
+		else if(result >= 0.5f && result < 1) endgamestar = 1;
+		else if(result >= 1 && result < 1.5f) endgamestar = 2;
+		else if(result >= 1.5f) endgamestar = 3;
+
+		std::string updatestatement = "UPDATE Players SET isdead = 1 WHERE id = " + gToStr(gamedatas.id) + ";";
+		root->insertDatabase(updatestatement);
+	}
+	else {
+		if(player.score < 10) endgamestar = 0;
+		else if(player.score >= 10 && player.score < 20) endgamestar = 2;
+		else if(player.score >= 20) endgamestar = 3;
+	}
+}
+
+std::string gCanvas::createInsertStatement(const Player &player) {
+    return "INSERT INTO Players (healthlevel, damagelevel, attackspeedlevel, goldmultiplierlevel, buffmultiplierlevel, score, gold, enemylevel, level, isdead) VALUES ("
+        + std::to_string(gamedatas.healthlevel) + ", "
+        + std::to_string(gamedatas.damagelevel) + ", "
+        + std::to_string(gamedatas.attackspeedlevel) + ", "
+        + std::to_string(gamedatas.goldmultiplierlevel) + ", "
+        + std::to_string(gamedatas.buffmultiplierlevel) + ", "
+        + std::to_string(player.score) + ", "
+        + std::to_string(player.totalgold) + ", "
+        + std::to_string(currentenemylevel) + ", "
+        + std::to_string(player.level) + ", "
+        + (player.isdead ? "1" : "0") + ");";
+}
+
+void gCanvas::loadGame(std::vector<int> data) {
+	multiplier.healthmultiplier = 1.15f;
+	multiplier.goldmultipliermultiplier = 1.15f;
+	multiplier.damagemultiplier = 1.15f;
+	multiplier.buffmultipliermultiplier = 1.15f;
+	multiplier.attackspeedmultiplier = 1.15f;
+
+	if(saveddata.size() > 0) {
+		gamedatas.id = data[0];
+		gamedatas.healthlevel = data[1];
+		gamedatas.damagelevel = data[2];
+		gamedatas.attackspeedlevel = data[3];
+		gamedatas.goldmultiplierlevel = data[4];
+		gamedatas.buffmultiplierlevel = data[5];
+		gamedatas.score = data[6];
+		gamedatas.gold = data[7];
+		gamedatas.isdead = data[8];
+		gamedatas.enemylevel = data[9];
+		gamedatas.level = data[10];
+
+		for(int i = 0; i < gamedatas.healthlevel; i++) {
+			gamedatas.health = 1000 * multiplier.healthmultiplier;
+		}
+		for(int i = 0; i < gamedatas.damagelevel; i++) {
+			gamedatas.damage = 120 * multiplier.damagemultiplier;
+		}
+		increaseScore(gamedatas.score);
+		increaseGold(gamedatas.gold);
+	}
+	else {
+		gamedatas.id = 0;
+		gamedatas.health = 1000;
+		gamedatas.damage = 120;
+		gamedatas.healthlevel = gamedatas.damagelevel = gamedatas.attackspeedlevel = gamedatas.goldmultiplierlevel = gamedatas.buffmultiplierlevel = gamedatas.enemylevel = gamedatas.level = 1;
+		gamedatas.score = gamedatas.gold = gamedatas.isdead = 0;
+	}
+}
+
 void gCanvas::updateDifficultyMessage() {
     if (showDifficultyIncreaseMessage) {
         difficultyMessageFrames--;
@@ -1301,7 +1485,6 @@ void gCanvas::drawDifficultyMessage() {
     }
 }
 void gCanvas::activateSpecialAbility() {
-
     special.radius = player.w / 2;
     special.maxRadius = 2000;
     special.centerX = player.x + (player.w / 2);
@@ -1309,6 +1492,7 @@ void gCanvas::activateSpecialAbility() {
     special.active = true;
     specials.push_back(special);
 }
+
 void gCanvas::updateSpecialAbility() {
     for (int i = 0; i < specials.size(); i++) {
         SpecialAbility& special = specials[i];
@@ -1321,25 +1505,25 @@ void gCanvas::updateSpecialAbility() {
             Bullet& bullet = activebullets[j];
             if (bullet.owner == OWNER_ENEMY) {
                 float distance = sqrt(pow(bullet.x - special.centerX, 2) + pow(bullet.y - special.centerY, 2));
-
-                if (fabs(distance - special.radius) <= 10.0f) {
+                if(fabs(distance - special.radius) <= 10.0f) {
                     activebullets.erase(activebullets.begin() + j);
                     j--;
                 }
             }
+
         }
 
         for (int k = 0; k < enemies.size(); k++) {
             Enemy& enemy = enemies[k];
             float distance = sqrt(pow(enemy.x - special.centerX, 2) + pow(enemy.y - special.centerY, 2));
 
-            if (fabs(distance - special.radius) <= 10.0f && !enemy.hitBySpecial) {
+            if(fabs(distance - special.radius) <= 10.0f && !enemy.hitBySpecial) {
                 enemy.health -= player.damage;
                 enemy.hitBySpecial = true;
             }
         }
 
-        if (special.radius >= special.maxRadius) {
+        if(special.radius >= special.maxRadius) {
             specials.erase(specials.begin() + i);
             i--;
         }

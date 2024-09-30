@@ -10,6 +10,8 @@
 
 #include "gBaseApp.h"
 #include "gFmodSound.h"
+#include "gDatabase.h"
+#include <fstream>
 
 
 class gApp : public gBaseApp {
@@ -21,18 +23,71 @@ public:
 	void setup();
 	void update();
 
+	// Sound const values.
+	static const int SOUND_TYPE_ONHIT = 0;
+	static const int SOUND_TYPE_STARTING = 1;
+	static const int SOUND_TYPE_ENDING = 2;
+
+	static const int SOUND_MENU = 0;
+	static const int SOUND_GAME = 1;
+	static const int SOUND_BUTTON = 2;
+	static const int SOUND_BUTTON2 = 3;
+	static const int SOUND_COIN = 4;
+	static const int SOUND_ENEMY_FIRE = 5;
+	static const int SOUND_CAT_FIRE = 6;
+	static const int SOUND_LOSE = 7;
+	static const int SOUND_POWERUP = 8;
+	static const int SOUND_POWERDOWN = 9;
+	static const int SOUND_EXPLOSION = 10;
+
+	static const int SOUND_COUNT = 11;
+	static const int MAX_ACTIVE_SOUNDS = 8;
+
 	void soundManager(int sound, int musicvalue, int type);
 
-	static const int SOUND_TYPE_ONHIT = 0, SOUND_TYPE_STARTING = 1, SOUND_TYPE_ENDING = 2;
-	static const int SOUND_MENU = 0, SOUND_GAME = 1, SOUND_BUTTON = 2, SOUND_BUTTON2 = 3, SOUND_COIN = 4, SOUND_ENEMY_FIRE = 5, SOUND_CAT_FIRE = 6, SOUND_LOSE = 7, SOUND_POWERUP = 8, SOUND_POWERDOWN = 9, SOUND_EXPLOSION = 10;
+	// Database.
+	void insertDatabase(std::string insert);
+	void setupDatabase();
+	void getTopFiveScores();
+
+	float getTotalScore();
+	float getTotalGold();
+	float getPlayerDataNumber();
+
+	std::vector<std::string> getScore();
+	std::vector<std::string> getGold();
+	std::vector<int> getIsDead();
 
 private:
-	gFmodSound sounds[11];
-	bool issoundloaded[11];
-	bool soundsloaded;
-
+	// Sound control.
 	void setupSounds();
-	void controlSounds();
+    void setVolumeAndPlay(int sound, float volume);
+    void stopSound(int sound);
+    void handleSound(int sound, float volume);
+    void replaceSound(int newSound);
+    bool fileExists(const std::string& filename);
+    void closeAllSounds();
+
+    gFmodSound sounds[MAX_ACTIVE_SOUNDS];
+    gFmodSound soundt;
+    std::vector<std::string> soundpaths;
+
+	// Database control.
+	bool executeDatabaseQuery(const std::string& query, std::vector<std::string>& selectedData);
+	void updateData();
+	void processDataRows(const std::vector<std::string>& selectedData);
+	void writeSoundList();
+
+	gDatabase database;
+
+	// Values
+	int id, healthlevel, damagelevel, attackspeedlevel, goldmultiplierlevel, buffmultiplierlevel, score, gold, isdead, enemylevel, level;
+	int numberofdata, totalscore, totalgold;
+	std::vector<std::string> topfivescore;
+	std::vector<std::string> topfivegold;
+	std::vector<std::string> datas;
+	std::vector<std::string> selectedData;
+	std::vector<int> saveddatas;
 };
 
 #endif /* GAPP_H_ */
