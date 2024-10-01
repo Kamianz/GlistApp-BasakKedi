@@ -44,6 +44,7 @@ private:
 	int gamestate;
 	static const int GAMESTATE_START = 0, GAMESTATE_WARNING = 1;
     static const int WARNING_NOT_SELECTED = -1, WARNING_NO = 0, WARNING_YES = 1;
+	const int NUM_BACKGROUNDS = 2;
 
 	struct ImageObject {
 		int x, y, w, h;
@@ -74,6 +75,8 @@ private:
 
     gFont warningfont;
 	std::vector<int> isdead;
+
+	float parallaxspeed;
 
 	void setupMenu();
 	void updateMenu();

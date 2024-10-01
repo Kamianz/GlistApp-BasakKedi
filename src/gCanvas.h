@@ -45,8 +45,8 @@ public:
 private:
 	gApp* root;
 
-	static const int backgroundlevellimit = 5;
-	static const int maxenemytypenum = 6;
+	static const int BACKGROUNDLEVELLIMIT = 5;
+	static const int MAXENEMYTYPENUM = 6;
 	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
 	static const int CITY = 0, SKY = 1;
@@ -67,6 +67,7 @@ private:
     static const int TRANSITION_STEPS = 255;
     static const int MARKET_SLOTS = 5;
     static const int END_GAME_PANEL_COUNT = 4, END_GAME_BUTTON_RESTART = 0, END_GAME_BUTTON_MENU = 1;
+    static const int END_GAME_LIST_NUMBER = 6;
 
 	struct Player {
 		float x, y, w, h;
@@ -92,6 +93,7 @@ private:
 
 	struct Enemy {
 		float x, y, w, h;
+		float bulletx, bullety;
 		float speed;
 		float health;
 		float damage;
@@ -136,9 +138,9 @@ private:
 
 	struct SpecialAbility {
 	    float radius;
-	    float maxRadius;
-	    float centerX;
-	    float centerY;
+	    float maxradius;
+	    float centerx;
+	    float centery;
 	    bool active;
 	    float r, g, b, alpha;
 	};
@@ -234,7 +236,7 @@ private:
 	gImage puanpanelimage;
 	gImage goldpanelimage;
 	gImage bulletimage[3];
-	gImage enemyimage[maxenemytypenum];
+	gImage enemyimage[MAXENEMYTYPENUM];
 	gImage healthbarimage;
 	gImage healthfillimage;
 	gImage energyfillimage;
@@ -296,18 +298,18 @@ private:
     gFont marketcostfont;
     gFont warningfont;
     gFont endgamefont;
+
 	std::string goldtext, puantext;
     std::string healthText = "100%";
     std::string energyText = "0%";
     std::string markettexts[MARKET_SLOTS];
-    static const int END_GAME_LIST_NUMBER = 6;
     std::string endgamelist[END_GAME_LIST_NUMBER];
 
     gColor powercolor;
 
 	// Fps things
-    std::chrono::high_resolution_clock::time_point previousFrameTime;
-    std::chrono::high_resolution_clock::time_point currentFrameTime;
+    std::chrono::high_resolution_clock::time_point previousframetime;
+    std::chrono::high_resolution_clock::time_point currentframetime;
 	float deltatime;
 	float fps;
 	float targetfps;
@@ -326,23 +328,23 @@ private:
 
     // Enemy
     std::vector<Enemy> enemies;
-    float enemyspeeds[maxenemytypenum];
-    float enemydamages[maxenemytypenum];
-    float enemyhealths[maxenemytypenum];
-    float enemycooldown[maxenemytypenum];
-    float enemycooldowntimer[maxenemytypenum];
+    float enemyspeeds[MAXENEMYTYPENUM];
+    float enemydamages[MAXENEMYTYPENUM];
+    float enemyhealths[MAXENEMYTYPENUM];
+    float enemycooldown[MAXENEMYTYPENUM];
+    float enemycooldowntimer[MAXENEMYTYPENUM];
     int currentenemylevel;
     int enemiesToSpawn;
     int remainingEnemies;
 
     int spawnctr = 0;
     int spawnctrlimit = 120;
-    bool showNextLevelMessage;
-    int waitTimer;
+    bool shownextlevelmessage;
+    int waittimer;
     float mapyvelocity;
 
-	bool showDifficultyIncreaseMessage;
-	int difficultyMessageFrames;
+	bool showdifficultyincreasemessage;
+	int difficultymessageframes;
 };
 
 #endif /* GCANVAS_H_ */

@@ -152,11 +152,17 @@ void menuCanvas::setupMenu() {
 
 	isdead = root->getIsDead();
 	gamestate = GAMESTATE_START;
+
+	parallaxspeed = 5;
 }
 
 void menuCanvas::updateMenu() {
-	for(int i = 0; i < 2; i++) {
-		background[i].x -= 1;
+	for (int i = 0; i < NUM_BACKGROUNDS; i++) {
+	    background[i].x -= parallaxspeed;
+
+	    if (background[i].x + background[i].w < 0) {
+	        background[i].x = getWidth();
+	    }
 	}
 }
 
