@@ -69,60 +69,65 @@ void gApp::soundManager(int sound, int musicvalue, int type) {
 	float volume = musicvalue / 100;
 	bool musicstate = musicvalue <= 0 ? true : false;
 
-	if(type == SOUND_TYPE_STARTING) {
-		if(sound == SOUND_MENU) {
-			sounds[SOUND_MENU].setVolume(volume);
-			sounds[SOUND_MENU].play();
-		}
-		if(sound == SOUND_GAME) {
-			sounds[SOUND_GAME].setVolume(volume);
-			sounds[SOUND_GAME].play();
-		}
-	}
-	if(type == SOUND_TYPE_ENDING) {
-		if(sound == SOUND_MENU) {
-			sounds[SOUND_MENU].stop();
-		}
-		if(sound == SOUND_GAME) {
-			sounds[SOUND_GAME].stop();
-		}
-	}
+    if (type == SOUND_TYPE_STARTING) {
+        if (musicEnabled) {
+            if (sound == SOUND_MENU) {
+                sounds[SOUND_MENU].setVolume(volume);
+                sounds[SOUND_MENU].play();
+            }
+            if (sound == SOUND_GAME) {
+                sounds[SOUND_GAME].setVolume(volume);
+                sounds[SOUND_GAME].play();
+            }
+        }
+    }
+    if (type == SOUND_TYPE_ENDING) {
+        if (sound == SOUND_MENU) {
+            sounds[SOUND_MENU].stop();
+        }
+        if (sound == SOUND_GAME) {
+            sounds[SOUND_GAME].stop();
+        }
+    }
 	if(type == SOUND_TYPE_ONHIT) {
-		if(sound == SOUND_BUTTON) {
-			sounds[SOUND_BUTTON].setVolume(volume);
-			sounds[SOUND_BUTTON].play();
-		}
-		if(sound == SOUND_BUTTON2) {
-			sounds[SOUND_BUTTON2].setVolume(volume);
-			sounds[SOUND_BUTTON2].play();
-		}
-		if(sound == SOUND_COIN) {
-			sounds[SOUND_COIN].setVolume(volume);
-			sounds[SOUND_COIN].play();
-		}
-		if(sound == SOUND_ENEMY_FIRE) {
-			sounds[SOUND_ENEMY_FIRE].setVolume(volume);
-			sounds[SOUND_ENEMY_FIRE].play();
-		}
-		if(sound == SOUND_CAT_FIRE) {
-			sounds[SOUND_CAT_FIRE].setVolume(volume);
-			sounds[SOUND_CAT_FIRE].play();
-		}
-		if(sound == SOUND_LOSE) {
-			sounds[SOUND_LOSE].setVolume(volume);
-			sounds[SOUND_LOSE].play();
-		}
-		if(sound == SOUND_POWERUP) {
-			sounds[SOUND_POWERUP].setVolume(volume);
-			sounds[SOUND_POWERUP].play();
-		}
-		if(sound == SOUND_POWERDOWN) {
-			sounds[SOUND_POWERDOWN].setVolume(volume);
-			sounds[SOUND_POWERDOWN].play();
-		}
-		if(sound == SOUND_EXPLOSION) {
-			sounds[SOUND_EXPLOSION].setVolume(volume);
-			sounds[SOUND_EXPLOSION].play();
+		if (soundEnabled) {
+			if(sound == SOUND_BUTTON) {
+				sounds[SOUND_BUTTON].setVolume(volume);
+				sounds[SOUND_BUTTON].play();
+			}
+			if(sound == SOUND_BUTTON2) {
+				sounds[SOUND_BUTTON2].setVolume(volume);
+				sounds[SOUND_BUTTON2].play();
+			}
+			if(sound == SOUND_COIN) {
+				sounds[SOUND_COIN].setVolume(volume);
+				sounds[SOUND_COIN].play();
+			}
+			if(sound == SOUND_ENEMY_FIRE) {
+				sounds[SOUND_ENEMY_FIRE].setVolume(volume);
+				sounds[SOUND_ENEMY_FIRE].play();
+			}
+			if(sound == SOUND_CAT_FIRE) {
+				sounds[SOUND_CAT_FIRE].setVolume(volume);
+				sounds[SOUND_CAT_FIRE].play();
+			}
+			if(sound == SOUND_LOSE) {
+				sounds[SOUND_LOSE].setVolume(volume);
+				sounds[SOUND_LOSE].play();
+			}
+			if(sound == SOUND_POWERUP) {
+				sounds[SOUND_POWERUP].setVolume(volume);
+				sounds[SOUND_POWERUP].play();
+			}
+			if(sound == SOUND_POWERDOWN) {
+				sounds[SOUND_POWERDOWN].setVolume(volume);
+				sounds[SOUND_POWERDOWN].play();
+			}
+			if(sound == SOUND_EXPLOSION) {
+				sounds[SOUND_EXPLOSION].setVolume(volume);
+				sounds[SOUND_EXPLOSION].play();
+			}
 		}
 	}
+
 }

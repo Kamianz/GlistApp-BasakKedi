@@ -16,6 +16,7 @@ gCanvas::gCanvas(gApp* root) : gBaseCanvas(root) {
 gCanvas::~gCanvas() {
 }
 
+
 void gCanvas::setup() {
 	setupGame();
 	setupBackground();
@@ -31,6 +32,7 @@ void gCanvas::setup() {
 	setupPausePanel();
 	setupMarket();
 	setupWarning();
+
 }
 
 void gCanvas::update() {
@@ -46,7 +48,9 @@ void gCanvas::update() {
         updateSpecialAbility();
     	updateDifficultyMessage();
 	}
-
+    else if (gamestate == GAMESTATE_PAUSE) {
+        previousFrameTime = currentFrameTime;
+    }
 }
 
 void gCanvas::draw() {
@@ -69,6 +73,17 @@ void gCanvas::draw() {
     if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT) drawWarning();
 
 	//
+//    gDrawRectangle(settingsbuttonx + settingsbuttonw * 0.2,
+//            settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.09,
+//            settingsbuttonw * 0.6,
+//            settingsbuttonh[BUTTON_CLICK] * 0.12);
+//    gDrawRectangle(settingsbuttonx + settingsbuttonw * 0.2,
+//            settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.3,
+//            settingsbuttonw * 0.6,
+//            settingsbuttonh[BUTTON_CLICK] * 0.15);
+//    gDrawRectangle(pausepanelx, pausepanely, pausepanelw, pausepanelh, false);
+//    gDrawCircle(pausepanelx + 187, pausepanely + 215, 67, false);
+//    gDrawCircle(pausepanelx + 389, pausepanely + 215, 67, false);
 
     previousFrameTime = currentFrameTime;
 }
@@ -170,10 +185,32 @@ void gCanvas::mousePressed(int x, int y, int button) {
 	}
 
 	if(gamestate == GAMESTATE_PAUSE){
-		if(x > settingsbuttonx && x < settingsbuttonx + settingsbuttonw && y > settingsbuttony[settingsbuttonstate] && y < settingsbuttony[settingsbuttonstate] + settingsbuttonh[settingsbuttonstate]){
-			settingsbuttonstate = (!settingsbuttonstate);
-		}
+
+		if (gamestate == GAMESTATE_PAUSE) {
+		        if (x > settingsbuttonx && x < settingsbuttonx + settingsbuttonw &&
+		            y > settingsbuttony[BUTTON_UNCLICK] && y < settingsbuttony[BUTTON_UNCLICK] + settingsbuttonh[BUTTON_UNCLICK]) {
+
+		            settingsbuttonstate = !settingsbuttonstate;
+		        }
+
+		        if (settingsbuttonstate == BUTTON_CLICK) {
+		            if (x > soundButtonX && x < soundButtonX + soundButtonW &&
+		                y > soundButtonY && y < soundButtonY + soundButtonH) {
+		            	std::cout << "Pause Button sound Pressed!" << std::endl;
+		                root->toggleSound();
+		                root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+		            }
+
+		            if (x > musicButtonX && x < musicButtonX + musicButtonW &&
+		                y > musicButtonY && y < musicButtonY + musicButtonH) {
+		            	std::cout << "Pause Button music Pressed!" << std::endl;
+		                root->toggleMusic();
+		                root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+		            }
+		        }
+		    }
 	}
+
 
 	if(gamestate == GAMESTATE_MARKET) {
 		for(int i = 0; i < MARKET_SLOTS; i++) {
@@ -195,6 +232,18 @@ void gCanvas::mousePressed(int x, int y, int button) {
 			}
 		}
 	}
+    if (gamestate == GAMESTATE_PAUSE) {
+        if (pow(x - (pausepanelbuttonx[BUTTON_PLAY] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+            std::cout << "Pause Button play Pressed!" << std::endl;
+        }
+
+        if (pow(x - (pausepanelbuttonx[BUTTON_RESTART] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+            std::cout << "Pause Button restart Pressed!" << std::endl;
+        }
+        if (pow(x - (pausepanelbuttonx[BUTTON_MENU] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+            std::cout << "Pause Button menu Pressed!" << std::endl;
+        }
+    }
 }
 
 void gCanvas::mouseReleased(int x, int y, int button) {
@@ -309,6 +358,8 @@ void gCanvas::setupGame() {
 	showDifficultyIncreaseMessage = false;
 	difficultyMessageFrames = 0;
 	root->soundManager(root->SOUND_GAME, 100, root->SOUND_TYPE_STARTING);
+
+
 }
 
 void gCanvas::setupPausePanel() {
@@ -329,6 +380,24 @@ void gCanvas::setupPausePanel() {
 	settingsbuttonx = getWidth() - settingsbuttonw - 30;
 	settingsbuttony[BUTTON_UNCLICK] = getHeight() - settingsbuttonh[BUTTON_UNCLICK] - 30;
 	settingsbuttony[BUTTON_CLICK] = getHeight() - settingsbuttonh[BUTTON_CLICK] - 30;
+
+    soundButtonW = settingsbuttonw * 0.6;
+    soundButtonH = settingsbuttonh[BUTTON_CLICK] * 0.12;
+    soundButtonX = settingsbuttonx + settingsbuttonw * 0.2;
+    soundButtonY = settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.09;
+
+    musicButtonW = settingsbuttonw * 0.6;
+    musicButtonH = settingsbuttonh[BUTTON_CLICK] * 0.15;
+    musicButtonX = settingsbuttonx + settingsbuttonw * 0.2;
+    musicButtonY = settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.3;
+
+    pausepanelbuttonx[BUTTON_PLAY] = pausepanelx + 120;
+    pausepanelbuttonx[BUTTON_RESTART] = pausepanelx + 322;
+    pausepanelbuttonx[BUTTON_MENU] = pausepanelx + 530;
+    pausepanelbuttony = pausepanely + 148;
+    pausepanelbuttonw = 134;
+    pausepanelbuttonh = 134;
+
 }
 
 void gCanvas::setupBackground() {
@@ -1351,3 +1420,17 @@ void gCanvas::drawSpecialAbility() {
         gDrawCircle(special.centerX, special.centerY, special.radius, false, 255);
     }
 }
+void gApp::toggleSound() {
+    soundEnabled = !soundEnabled;
+}
+
+void gApp::toggleMusic() {
+    musicEnabled = !musicEnabled;
+
+    if (musicEnabled) {
+        sounds[SOUND_MENU].stop();
+        sounds[SOUND_GAME].stop();
+    }
+}
+
+

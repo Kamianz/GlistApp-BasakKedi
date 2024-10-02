@@ -47,11 +47,13 @@ private:
 
 	static const int backgroundlevellimit = 5;
 	static const int maxenemytypenum = 6;
+	static const int pausepanelmaxbuttonnum = 3;
 	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
 	static const int CITY = 0, SKY = 1;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
+	static const int BUTTON_PLAY = 0, BUTTON_RESTART = 1, BUTTON_MENU = 2;
 	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_BUFF_FRAME_COUNT = 4;
 	static const int PLAYER_IDLE = 0, PLAYER_HURT = 1;
 	static const int DROP_GOLD = 0, DROP_POWER_BUFF = 1;
@@ -204,6 +206,9 @@ private:
 	void calculateFPS();
 	float getFPS();
 
+	void toggleSound();
+	void toggleMusic();
+
 	gImage backgroundimage[2];
 	gImage playerimg[PLAYER_FRAME_COUNT];
 	gImage gamebuttonimage[BUTTON_COUNT];
@@ -257,6 +262,10 @@ private:
 	int pausepanelx, pausepanely, pausepanelw, pausepanelh;
 	int settingsbuttonstate;
 	int settingsbuttonx, settingsbuttony[2], settingsbuttonw, settingsbuttonh[2];
+	int soundButtonX, soundButtonY, soundButtonW, soundButtonH;
+	int musicButtonX, musicButtonY, musicButtonW, musicButtonH;
+	int pausepanelbuttonx[pausepanelmaxbuttonnum], pausepanelbuttony, pausepanelbuttonw, pausepanelbuttonh;
+
     int marketcost[MARKET_SLOTS];
     int xcenter[2], ycenter[2], radius[2];
     int lastgamestate;
