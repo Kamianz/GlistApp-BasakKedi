@@ -45,6 +45,10 @@ public:
 
 	void soundManager(int sound, int musicvalue, int type);
 
+	void toggleSound();
+	void toggleMusic();
+	void onSceneChange();
+
 	// Database.
 	void insertDatabase(std::string insert);
 	void setupDatabase();
@@ -67,16 +71,16 @@ private:
     void replaceSound(int newSound);
     bool fileExists(const std::string& filename);
     void closeAllSounds();
+    void stopAllSounds();
 
     gFmodSound sounds[MAX_ACTIVE_SOUNDS];
     gFmodSound soundt;
     std::vector<std::string> soundpaths;
 
+    bool musicenabled;
+    bool soundenabled;
+
 	// Database control.
-	bool executeDatabaseQuery(const std::string& query, std::vector<std::string>& selectedData);
-	void updateData();
-	void processDataRows(const std::vector<std::string>& selectedData);
-	void writeSoundList();
 
 	gDatabase database;
 

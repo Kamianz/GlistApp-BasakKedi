@@ -41,6 +41,8 @@ bool gApp::fileExists(const std::string& filename) {
 }
 
 void gApp::setupSounds() {
+	soundenabled = true;
+	musicenabled = true;
     soundpaths.clear();
     soundpaths.push_back("menumuzigi.mp3");
     soundpaths.push_back("oyunmuzigi.mp3");
@@ -78,11 +80,13 @@ void gApp::soundManager(int sound, int musicvalue, int type) {
             break;
 
         case SOUND_TYPE_ONHIT:
-        	if(sound < MAX_ACTIVE_SOUNDS) {
-				handleSound(sound, volume);
-			} else {
-				replaceSound(sound);
-			}
+        	if(!soundenabled) {
+            	if(sound < MAX_ACTIVE_SOUNDS) {
+    				handleSound(sound, volume);
+    			} else {
+    				replaceSound(sound);
+    			}
+        	}
             break;
 
         default:
@@ -189,6 +193,46 @@ void gApp::closeAllSounds() {
     }
 }
 
+void gApp::stopAllSounds() {
+    if(sounds[SOUND_MENU].isPlaying()) {
+        sounds[SOUND_MENU].setPaused(true);
+    }
+
+    if(sounds[SOUND_GAME].isPlaying()) {
+        sounds[SOUND_GAME].setPaused(true);
+    }
+}
+
+void gApp::onSceneChange() {
+    stopAllSounds();
+}
+
+void gApp::toggleSound() {
+	soundenabled = !soundenabled;
+}
+void gApp::toggleMusic() {
+    musicenabled = !musicenabled;
+
+    if(!musicenabled) {
+        if(sounds[SOUND_MENU].isPlaying()) {
+            sounds[SOUND_MENU].setPaused(true);
+        }
+
+        if(sounds[SOUND_GAME].isPlaying()) {
+            sounds[SOUND_GAME].setPaused(true);
+        }
+    }
+    else {
+        if(sounds[SOUND_MENU].isLoaded()) {
+            sounds[SOUND_MENU].setPaused(false);
+        }
+
+        if(sounds[SOUND_GAME].isLoaded()) {
+            sounds[SOUND_GAME].setPaused(false);
+        }
+    }
+}
+
 void gApp::setupDatabase() {
 	datas.clear();
 
@@ -255,12 +299,6 @@ void gApp::setupDatabase() {
 	    	saveddatas.push_back(isdead);
 	    }
 	}
-
-//	for (int i = 0; i < datas.size(); i++) {
-//	    std::cout << "Data " << i + 1 << ": " << datas[i] << std::endl;
-//	    std::cout << "Score " << i + 1 << ": " << topfivescore[i] << std::endl;
-//	    std::cout << "Gold " << i + 1 << ": " << topfivegold[i] << std::endl;
-//	}
 }
 
 float gApp::getTotalScore() {

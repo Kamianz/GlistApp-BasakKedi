@@ -143,8 +143,8 @@ void gCanvas::mouseDragged(int x, int y, int button) {
 }
 
 void gCanvas::mousePressed(int x, int y, int button) {
-
-//	generateDrop(player.x + 1000, player.y, player.w, player.h, DROP_GOLD);
+	generateDrop(player.x + 1000, player.y + 200, player.w, player.h, DROP_POWER_BUFF);
+	generateDrop(player.x + 1000, player.y, player.w, player.h, DROP_GOLD);
 	for(int i = 0; i < BUTTON_COUNT; i++) {
 		if(x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
 		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
@@ -172,13 +172,6 @@ void gCanvas::mousePressed(int x, int y, int button) {
 				}
 				gamebutton[i].pressed = true;
 			}
-		}
-	}
-
-	if(gamestate == GAMESTATE_PAUSE){
-		if(x > settingsbuttonx && x < settingsbuttonx + settingsbuttonw && y > settingsbuttony[settingsbuttonstate] && y < settingsbuttony[settingsbuttonstate] + settingsbuttonh[settingsbuttonstate]){
-			settingsbuttonstate = (!settingsbuttonstate);
-			root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
 		}
 	}
 
@@ -212,6 +205,51 @@ void gCanvas::mousePressed(int x, int y, int button) {
 			}
 		}
 	}
+
+	//
+	if(gamestate == GAMESTATE_PAUSE){
+		if (gamestate == GAMESTATE_PAUSE) {
+			if (x > settingsbuttonx && x < settingsbuttonx + settingsbuttonw &&
+				y > settingsbuttony[BUTTON_UNCLICK] && y < settingsbuttony[BUTTON_UNCLICK] + settingsbuttonh[BUTTON_UNCLICK]) {
+
+				settingsbuttonstate = !settingsbuttonstate;
+			}
+
+			if (settingsbuttonstate == BUTTON_CLICK) {
+				if (x > soundButtonX && x < soundButtonX + soundButtonW &&
+					y > soundButtonY && y < soundButtonY + soundButtonH) {
+					root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+					root->toggleSound();
+				}
+
+				if (x > musicButtonX && x < musicButtonX + musicButtonW &&
+					y > musicButtonY && y < musicButtonY + musicButtonH) {
+					root->soundManager(root->SOUND_BUTTON2, 100, root->SOUND_TYPE_ONHIT);
+					root->toggleMusic();
+				}
+			}
+		}
+	}
+
+	// Pause panel.
+    if (gamestate == GAMESTATE_PAUSE) {
+        if (pow(x - (pausepanelbuttonx[BUTTON_PLAY] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+            changeGameState(GAMESTATE_PLAY);
+        }
+
+        if (pow(x - (pausepanelbuttonx[BUTTON_RESTART] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+			root->onSceneChange();
+    		gCanvas* cnv = new gCanvas(root);
+    		appmanager->setCurrentCanvas(cnv);
+    		endgamebutton[END_GAME_BUTTON_RESTART].pressed = false;
+        }
+        if (pow(x - (pausepanelbuttonx[BUTTON_MENU] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
+			root->onSceneChange();
+    		menuCanvas* menu = new menuCanvas(root);
+    		appmanager->setCurrentCanvas(menu);
+    		endgamebutton[END_GAME_BUTTON_MENU].pressed = false;
+        }
+    }
 }
 
 void gCanvas::mouseReleased(int x, int y, int button) {
@@ -354,6 +392,23 @@ void gCanvas::setupPausePanel() {
 	settingsbuttonx = getWidth() - settingsbuttonw - 30;
 	settingsbuttony[BUTTON_UNCLICK] = getHeight() - settingsbuttonh[BUTTON_UNCLICK] - 30;
 	settingsbuttony[BUTTON_CLICK] = getHeight() - settingsbuttonh[BUTTON_CLICK] - 30;
+
+    soundButtonW = settingsbuttonw * 0.6;
+    soundButtonH = settingsbuttonh[BUTTON_CLICK] * 0.12;
+    soundButtonX = settingsbuttonx + settingsbuttonw * 0.2;
+    soundButtonY = settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.09;
+
+    musicButtonW = settingsbuttonw * 0.6;
+    musicButtonH = settingsbuttonh[BUTTON_CLICK] * 0.15;
+    musicButtonX = settingsbuttonx + settingsbuttonw * 0.2;
+    musicButtonY = settingsbuttony[BUTTON_CLICK] + settingsbuttonh[BUTTON_CLICK] * 0.3;
+
+    pausepanelbuttonx[BUTTON_PLAY] = pausepanelx + 120;
+    pausepanelbuttonx[BUTTON_RESTART] = pausepanelx + 322;
+    pausepanelbuttonx[BUTTON_MENU] = pausepanelx + 530;
+    pausepanelbuttony = pausepanely + 148;
+    pausepanelbuttonw = 134;
+    pausepanelbuttonh = 134;
 }
 
 void gCanvas::setupBackground() {
@@ -508,11 +563,9 @@ void gCanvas::setupBullet() {
 
 void gCanvas::setupDrops() {
 	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
-//		goldimage[i].loadImage("golds/" + gToStr(i + 1) + ".png");
 		dropimage[DROP_GOLD][i].loadImage("golds/" + gToStr(i + 1) + ".png");
 	}
 	for(int i = 0; i < POWER_BUFF_FRAME_COUNT; i++) {
-//		powerbuffimage[i].loadImage("power_" + gToStr(i + 1) + ".png");
 		dropimage[DROP_POWER_BUFF][i].loadImage("power_" + gToStr(i + 1) + ".png");
 	}
 }
@@ -633,12 +686,12 @@ void gCanvas::updatePlayer() {
         }
     }
     else {
-//        animator(player.animcounter, player.animframeno, 0, 1, 30);
+        animator(player.animcounter, player.animframeno, 0, 1, 30);
         player.ishit = checkCollision(player.x, player.y, player.w, player.h, COL_PE);
     }
 
 	if(player.canshoot){
-//		generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
+		generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
 		player.canshoot = false;
 	}
 	else {
@@ -701,16 +754,38 @@ void gCanvas::updateEnemy() {
 }
 
 void gCanvas::updateDrops() {
-	for(int i = 0; i < activedrops.size(); i++) {
-		Drop& drop = activedrops[i];
+    for (int i = 0; i < activedrops.size(); i++) {
+        Drop& drop = activedrops[i];
 
-		drop.x -= drop.speed;
-		if(drop.id == DROP_GOLD) animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
-		if(drop.id == DROP_POWER_BUFF) animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
+        // Update drops position.
+        drop.x -= drop.speed; // Hýzla sola hareket etmeye devam et.
 
-		drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
-		if(drop.iscollide || (drop.x + drop.w) < mapleft) activedrops.erase(activedrops.begin() + i);
-	}
+        // Update drops width and height.
+        drop.h = dropimage[drop.id][drop.animframeno].getHeight();
+        drop.w = dropimage[drop.id][drop.animframeno].getWidth();
+
+        // Geniþlik deðerine göre X konumunu ayarla.
+        int offsetX = drop.w / 2; // Geniþliðin yarýsýný al.
+        int drawX = drop.x + offsetX; // Görsel konumunu hesapla.
+
+        // Y konumunu hafif bir dalgalanma ile güncelle.
+        drop.offsetY = sin(drop.animcounter * 0.1f) * 5; // Dalgalanma (5 birim yükseklik)
+        int drawY = drop.y + drop.offsetY; // Güncellenmiþ Y konumu
+
+        // Animation.
+        if (drop.id == DROP_GOLD)
+            animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
+        if (drop.id == DROP_POWER_BUFF)
+            animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
+
+        // Collision control.
+        drop.iscollide = checkCollision(drop.x, drawY, drop.w, drop.h, COL_D, 0, drop.id);
+
+        if (drop.iscollide || (drop.x + drop.w) < mapleft) {
+            activedrops.erase(activedrops.begin() + i);
+            i--;
+        }
+    }
 }
 
 void gCanvas::generateEnemy() {
@@ -849,9 +924,12 @@ void gCanvas::drawBullet() {
 void gCanvas::drawDrops() {
 	for(int i = 0; i < activedrops.size(); i++) {
 		Drop &drop = activedrops[i];
-		dropimage[drop.id][drop.animframeno].draw(drop.x, drop.y, drop.w, drop.h);
 
-//		dropimage[DROP_GOLD][i].draw(400 * i, player.y);
+	    int offsetX = drop.w / 2;
+	    int drawX = drop.x + offsetX;
+
+	    int drawY = drop.y + drop.offsetY;
+		dropimage[drop.id][drop.animframeno].draw(drop.x + drawX, drop.y, drop.w, drop.h);
 	}
 }
 
@@ -892,19 +970,21 @@ void gCanvas::drawPausePanel() {
 }
 
 void gCanvas::generateDrop(int x, int y, int w, int h, int id) {
-	Drop newdrop;
+    Drop newdrop;
 
-	newdrop.w = dropimage[id][0].getWidth();
-	newdrop.h = dropimage[id][0].getHeight();
-	newdrop.x = x + ((w - newdrop.w) / 2);
-	newdrop.y = y + ((h - newdrop.h) / 2);
-	newdrop.animcounter = 0;
-	newdrop.animframeno = 0;
-	newdrop.iscollide = false;
-	newdrop.speed = 5;
-	newdrop.id = id;
+    newdrop.w = dropimage[id][0].getWidth();
+    newdrop.h = dropimage[id][0].getHeight();
+    newdrop.x = x + ((w - newdrop.w) / 2);
+    newdrop.y = y + ((h - newdrop.h) / 2);
+    newdrop.animcounter = 0;
+    newdrop.animframeno = 0;
+    newdrop.iscollide = false;
+    newdrop.speed = 1;
+    newdrop.id = id;
 
-	activedrops.push_back(newdrop);
+//    newdrop.startx = newdrop.x;
+
+    activedrops.push_back(newdrop);
 }
 
 void gCanvas::generateExplosion(int explosionx, int explosiony, int explosionw,

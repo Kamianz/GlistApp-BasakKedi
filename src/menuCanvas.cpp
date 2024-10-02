@@ -70,16 +70,11 @@ void menuCanvas::mousePressed(int x, int y, int button) {
 		}
 	}
 }
-int counter = 2;
-void menuCanvas::mouseReleased(int x, int y, int button) {
-	root->soundManager(counter, 100, root->SOUND_TYPE_ONHIT);
-	counter++;
-	if(counter > 10) counter = 2;
 
+void menuCanvas::mouseReleased(int x, int y, int button) {
 	if(buttongroup[0].pressed) {
 		buttongroup[0].pressed = false;
 		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
-		root->soundManager(root->SOUND_MENU, 100, root->SOUND_TYPE_ENDING);
 		if(isdead.size() > 0) gamestate = GAMESTATE_WARNING;
 		else startGame();
 	}
@@ -262,6 +257,7 @@ void menuCanvas::deleteSave(int id) {
 }
 
 void menuCanvas::startGame() {
+	root->onSceneChange();
 	gCanvas* game = new gCanvas(root);
 	appmanager->setCurrentCanvas(game);
 }

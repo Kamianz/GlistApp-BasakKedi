@@ -47,11 +47,13 @@ private:
 
 	static const int BACKGROUNDLEVELLIMIT = 5;
 	static const int MAXENEMYTYPENUM = 6;
+	static const int PAUSEPANELMAXBUTTONNUM = 3;
 	static const int UFO_RED = 0, UFO_BLACK = 1, UFO_GREEN = 2, SUIT_BLACK = 3, SUIT_ORANGE = 4, SUIT_PURPLE = 5;
 	static const int PLAYER = 0, SUIT_ALIEN = 1, UFO_ALIEN = 2;
 	static const int CITY = 0, SKY = 1;
 	static const int BUTTON_COUNT = 5;
 	static const int BUTTON_LEFT = 0, BUTTON_RIGHT = 1, BUTTON_UP = 2, BUTTON_DOWN = 3, BUTTON_FIRE = 4;
+	static const int BUTTON_PLAY = 0, BUTTON_RESTART = 1, BUTTON_MENU = 2;
 	static const int GOLD_FRAME_COUNT = 10, PLAYER_FRAME_COUNT = 5, POWER_BUFF_FRAME_COUNT = 4;
 	static const int PLAYER_IDLE = 0, PLAYER_HURT = 1;
 	static const int DROP_GOLD = 0, DROP_POWER_BUFF = 1;
@@ -115,11 +117,13 @@ private:
 	};
 
 	struct Drop {
-		int id;
-		int x, y, w, h;
-		int speed;
-		int animcounter, animframeno;
-		bool iscollide;
+	    int id; // Drop türü
+	    int x, y; // X ve Y koordinatlarý
+	    int w, h; // Geniþlik ve yükseklik
+	    float speed; // Hýz (float kullanmak daha pürüzsüz hareket saðlar)
+	    int animcounter, animframeno; // Animasyon sayacý ve çerçevesi
+	    bool iscollide; // Çarpýþma durumu
+	    float offsetY; // Dikey dalgalanma için ek offset
 	};
 
 	struct Background {
@@ -221,6 +225,8 @@ private:
 	void increaseScore(int quantity);
 	void decreaseGold(int quantity);
 	void decreaseScore(int quantity);
+	void toggleSound();
+	void toggleMusic();
 
 	void calculateStar();
 	std::string createInsertStatement(const Player& player);
@@ -279,6 +285,7 @@ private:
 	std::vector<int> saveddata;
 
     bool powerup;
+    int testcounter;
     float poweruptimes, poweruptimer;
 	float backgroundspeed;
 	int mapleft, mapright, maptop, mapbottom;
@@ -287,6 +294,9 @@ private:
 	int pausepanelx, pausepanely, pausepanelw, pausepanelh;
 	int settingsbuttonstate;
 	int settingsbuttonx, settingsbuttony[2], settingsbuttonw, settingsbuttonh[2];
+	int soundButtonX, soundButtonY, soundButtonW, soundButtonH;
+	int musicButtonX, musicButtonY, musicButtonW, musicButtonH;
+	int pausepanelbuttonx[PAUSEPANELMAXBUTTONNUM], pausepanelbuttony, pausepanelbuttonw, pausepanelbuttonh;
     int marketcost[MARKET_SLOTS];
     int xcenter[2], ycenter[2], radius[2];
     int lastgamestate;
