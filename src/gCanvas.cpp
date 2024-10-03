@@ -14,11 +14,10 @@ gCanvas::gCanvas(gApp* root) : gBaseCanvas(root) {
 }
 
 gCanvas::~gCanvas() {
-	root->insertDatabase(createInsertStatement(player));
 }
 
 void gCanvas::setup() {
-	saveddata = root->getIsDead();
+	saveddata = root->getSavedData();
 	loadGame(saveddata);
 
 	setupGame();
@@ -71,19 +70,13 @@ void gCanvas::draw() {
     drawPanel();
     if(gamestate == GAMESTATE_MARKET) drawMarket();
 	if(gamestate == GAMESTATE_PAUSE) drawPausePanel();
-    if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT) drawWarning();
+    if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT || GAMESTATE_WARNING_REPLAY) drawWarning();
     if(gamestate == GAMESTATE_END_GAME) drawEndPanel();
 	//
     previousframetime = currentframetime;
 }
 
 void gCanvas::keyPressed(int key) {
-	//	if(key == 32) {
-	//		if(player.canshoot){
-	//			generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER, player.damage);
-	//			player.canshoot = false;
-	//		}
-	//	}
     if(key == 32) {
         if (player.energy >= player.maxenergy / 2) {
             activateSpecialAbility();
@@ -108,13 +101,8 @@ void gCanvas::keyPressed(int key) {
 	}
 
 	if(key == 256){
-        if (gamestate == GAMESTATE_PLAY) {
-            gamestate = GAMESTATE_PAUSE;
-            //std::cout << "Game paused." << gamestate << std::endl;
-        } else {
-            changeGameState(GAMESTATE_PLAY);
-           // std::cout << "Game resumed." << std::endl;
-        }
+        if(gamestate == GAMESTATE_PLAY) gamestate = GAMESTATE_PAUSE;
+        else changeGameState(GAMESTATE_PLAY);
 	}
 }
 
@@ -143,8 +131,6 @@ void gCanvas::mouseDragged(int x, int y, int button) {
 }
 
 void gCanvas::mousePressed(int x, int y, int button) {
-	generateDrop(player.x + 1000, player.y + 200, player.w, player.h, DROP_POWER_BUFF);
-	generateDrop(player.x + 1000, player.y, player.w, player.h, DROP_GOLD);
 	for(int i = 0; i < BUTTON_COUNT; i++) {
 		if(x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
 		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
@@ -164,10 +150,7 @@ void gCanvas::mousePressed(int x, int y, int button) {
 						player.downkey = true;
 						break;
 					case BUTTON_FIRE:
-//						if(player.canshoot){
-//							generateBullet(player.x + (player.w / 2), player.y + (player.h / 1.5f), player.w, player.h / 4, OWNER_PLAYER, PLAYER , player.damage);
-//							player.canshoot = false;
-//						}
+						// Add skill.
 						break;
 				}
 				gamebutton[i].pressed = true;
@@ -188,7 +171,7 @@ void gCanvas::mousePressed(int x, int y, int button) {
 		}
 	}
 
-	if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT) {
+	if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT || gamestate == GAMESTATE_WARNING_REPLAY) {
 		for(int i = 0; i < 2; i++) {
 			if (pow(x - xcenter[i], 2) + pow(y - ycenter[i], 2) < pow(radius[i], 2)) {
 				warningbutton[i].pressed = true;
@@ -236,35 +219,20 @@ void gCanvas::mousePressed(int x, int y, int button) {
         if (pow(x - (pausepanelbuttonx[BUTTON_PLAY] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
             changeGameState(GAMESTATE_PLAY);
         }
-
         if (pow(x - (pausepanelbuttonx[BUTTON_RESTART] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
-			root->onSceneChange();
-    		gCanvas* cnv = new gCanvas(root);
-    		appmanager->setCurrentCanvas(cnv);
-    		endgamebutton[END_GAME_BUTTON_RESTART].pressed = false;
+        	changeGameState(GAMESTATE_WARNING_REPLAY);
         }
         if (pow(x - (pausepanelbuttonx[BUTTON_MENU] + pausepanelbuttonw / 2), 2) + pow(y - (pausepanelbuttony + pausepanelbuttonh / 2), 2) <= pow(pausepanelbuttonw / 2, 2)) {
-			root->onSceneChange();
-    		menuCanvas* menu = new menuCanvas(root);
-    		appmanager->setCurrentCanvas(menu);
-    		endgamebutton[END_GAME_BUTTON_MENU].pressed = false;
+        	changeGameState(GAMESTATE_EXIT);
         }
     }
 }
 
 void gCanvas::mouseReleased(int x, int y, int button) {
-	// For test purpose.
-//	if(button == 0) targetfps -= 10;
-//	if(button == 1) targetfps += 10;
-//	player.powerup = true;
-	// For test purpose.
-
 	for(int i = 0; i < BUTTON_COUNT; i++) {
-		// Yalnýzca basýlý tuþu serbest býrakýrken koordinatlar kontrol ediliyor
 		if(gamebutton[i].pressed &&
 		   x > gamebutton[i].x && x < (gamebutton[i].x + gamebutton[i].w) &&
 		   y > gamebutton[i].y && y < (gamebutton[i].y + gamebutton[i].h)) {
-			// Ýlgili tuþ býrakýlýyor ve pressed durumu güncelleniyor
 			switch(i) {
 				case BUTTON_LEFT:
 					player.leftkey = false;
@@ -296,7 +264,7 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 		}
 	}
 
-	if(gamestate == GAMESTATE_WARNING) {
+	if(gamestate == GAMESTATE_WARNING || gamestate == GAMESTATE_EXIT || GAMESTATE_WARNING_REPLAY) {
 		if (warningbutton[WARNING_NO].pressed == true) {
 			if(lastgamestate == GAMESTATE_PAUSE) {
 				changeGameState(GAMESTATE_PAUSE);
@@ -308,9 +276,13 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 			warningbutton[WARNING_NO].pressed = false;
 		}
 		if(warningbutton[WARNING_YES].pressed == true){
-			if(lastgamestate == GAMESTATE_PAUSE) {
-				menuCanvas* menu = new menuCanvas(root);
-				appmanager->setCurrentCanvas(menu);
+			if(gamestate == GAMESTATE_EXIT) {
+				root->insertDatabase(saveData(player));
+				setMenu();
+			}
+			if(gamestate == GAMESTATE_WARNING_REPLAY) {
+				root->resetSave();
+				setGame();
 			}
 			if(lastgamestate == GAMESTATE_MARKET) {
 				changeGameState(GAMESTATE_MARKET);
@@ -321,14 +293,14 @@ void gCanvas::mouseReleased(int x, int y, int button) {
 
 	if(gamestate == GAMESTATE_END_GAME) {
 		if(endgamebutton[END_GAME_BUTTON_RESTART].pressed) {
-			gCanvas* cnv = new gCanvas(root);
-			appmanager->setCurrentCanvas(cnv);
+			root->resetSave();
 			endgamebutton[END_GAME_BUTTON_RESTART].pressed = false;
+			setGame();
 		}
 		if(endgamebutton[END_GAME_BUTTON_MENU].pressed) {
-			menuCanvas* menu = new menuCanvas(root);
-			appmanager->setCurrentCanvas(menu);
+			root->resetSave();
 			endgamebutton[END_GAME_BUTTON_MENU].pressed = false;
+			setMenu();
 		}
 	}
 }
@@ -468,6 +440,7 @@ void gCanvas::setupPlayer() {
 
 	player.isdead = gamedatas.isdead;
 	player.gold = gamedatas.gold;
+	player.totalgold = 0;
 	player.score = gamedatas.score;
 	player.energy = 0;
 	player.level = gamedatas.level;
@@ -764,14 +737,6 @@ void gCanvas::updateDrops() {
         drop.h = dropimage[drop.id][drop.animframeno].getHeight();
         drop.w = dropimage[drop.id][drop.animframeno].getWidth();
 
-        // Geniþlik deðerine göre X konumunu ayarla.
-        int offsetX = drop.w / 2; // Geniþliðin yarýsýný al.
-        int drawX = drop.x + offsetX; // Görsel konumunu hesapla.
-
-        // Y konumunu hafif bir dalgalanma ile güncelle.
-        drop.offsetY = sin(drop.animcounter * 0.1f) * 5; // Dalgalanma (5 birim yükseklik)
-        int drawY = drop.y + drop.offsetY; // Güncellenmiþ Y konumu
-
         // Animation.
         if (drop.id == DROP_GOLD)
             animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
@@ -779,7 +744,7 @@ void gCanvas::updateDrops() {
             animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
 
         // Collision control.
-        drop.iscollide = checkCollision(drop.x, drawY, drop.w, drop.h, COL_D, 0, drop.id);
+        drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
 
         if (drop.iscollide || (drop.x + drop.w) < mapleft) {
             activedrops.erase(activedrops.begin() + i);
@@ -1336,10 +1301,12 @@ void gCanvas::marketBuy(int slot, float &gold) {
 }
 
 void gCanvas::setupWarning() {
-    warningimage.loadImage("gui/uyarimarket.png");
+    warningimage[0].loadImage("gui/uyarimarket.png");
+    warningimage[1].loadImage("gui/uyari.png");
+    warningimage[2].loadImage("gui/uyariblank.png");
 
-    float original_w = warningimage.getWidth();
-    float original_h = warningimage.getHeight();
+    float original_w = warningimage[0].getWidth();
+    float original_h = warningimage[0].getHeight();
 
     warning.w = original_w * 1.5f;
     warning.h = original_h * 1.5f;
@@ -1379,8 +1346,9 @@ void gCanvas::setupWarning() {
 
 
 void gCanvas::drawWarning() {
-    if(gamestate == GAMESTATE_WARNING) warningimage.draw(warning.x, warning.y, warning.w, warning.h);
-    if(gamestate == GAMESTATE_EXIT) warningimage.draw(warning.x, warning.y, warning.w, warning.h); // deðiþtir.
+    if(gamestate == GAMESTATE_WARNING) warningimage[0].draw(warning.x, warning.y, warning.w, warning.h);
+    if(gamestate == GAMESTATE_EXIT) warningimage[1].draw(warning.x, warning.y, warning.w, warning.h);
+    if(gamestate == GAMESTATE_WARNING_REPLAY) warningimage[2].draw(warning.x, warning.y, warning.w, warning.h); // deðiþtir.
 
 //    for(int i = 0; i < 2; i++) {
 //    	gDrawCircle(xcenter[i], ycenter[i], radius[i], true, 100);
@@ -1431,22 +1399,8 @@ void gCanvas::setupEndPanel() {
 	// Load font.
 	endgamefont.loadFont("action_man.ttf", 24);
 
-	// Get database values.
-	root->getTopFiveScores();
-	std::vector<std::string> topfivescore = root->getScore();
-	std::vector<std::string> topfivegold = root->getGold();
-
-	// Edit texts.
-	endgamelist[0] = "Top 5";
-
-	for(int i = 0; i < END_GAME_LIST_NUMBER; i++) {
-		if(topfivescore.size() <= i) {
-			endgamelist[i + 1] = "0 / 0";
-		}
-		else {
-			endgamelist[i + 1] = "Score: " + gToStr(topfivescore[i]) + " / Total Gold: " + gToStr(topfivegold[i]);
-		}
-	}
+	// Get List Values.
+	setEndGameList();
 }
 
 void gCanvas::drawEndPanel() {
@@ -1496,9 +1450,8 @@ void gCanvas::calculateStar() {
 		else if(result >= 0.5f && result < 1) endgamestar = 1;
 		else if(result >= 1 && result < 1.5f) endgamestar = 2;
 		else if(result >= 1.5f) endgamestar = 3;
-
-		std::string updatestatement = "UPDATE Players SET isdead = 1 WHERE id = " + gToStr(gamedatas.id) + ";";
-		root->insertDatabase(updatestatement);
+		controlScore();
+		setEndGameList();
 	}
 	else {
 		if(player.score < 10) endgamestar = 0;
@@ -1507,18 +1460,18 @@ void gCanvas::calculateStar() {
 	}
 }
 
-std::string gCanvas::createInsertStatement(const Player &player) {
-    return "INSERT INTO Players (healthlevel, damagelevel, attackspeedlevel, goldmultiplierlevel, buffmultiplierlevel, score, gold, enemylevel, level, isdead) VALUES ("
-        + std::to_string(gamedatas.healthlevel) + ", "
-        + std::to_string(gamedatas.damagelevel) + ", "
-        + std::to_string(gamedatas.attackspeedlevel) + ", "
-        + std::to_string(gamedatas.goldmultiplierlevel) + ", "
-        + std::to_string(gamedatas.buffmultiplierlevel) + ", "
-        + std::to_string(player.score) + ", "
-        + std::to_string(player.totalgold) + ", "
-        + std::to_string(currentenemylevel) + ", "
-        + std::to_string(player.level) + ", "
-        + (player.isdead ? "1" : "0") + ");";
+std::string gCanvas::saveData(const Player &player) {
+    return "UPDATE Save SET healthlevel = " + std::to_string(gamedatas.healthlevel)
+        + ", damagelevel = " + std::to_string(gamedatas.damagelevel)
+        + ", attackspeedlevel = " + std::to_string(gamedatas.attackspeedlevel)
+        + ", goldmultiplierlevel = " + std::to_string(gamedatas.goldmultiplierlevel)
+        + ", buffmultiplierlevel = " + std::to_string(gamedatas.buffmultiplierlevel)
+        + ", score = " + std::to_string(player.score)
+        + ", gold = " + std::to_string(player.totalgold)
+        + ", enemylevel = " + std::to_string(currentenemylevel)
+        + ", level = " + std::to_string(player.level)
+        + ", isdead = " + (player.isdead ? "1" : "0")
+        + " WHERE Id = 1;";
 }
 
 void gCanvas::loadGame(std::vector<int> data) {
@@ -1627,4 +1580,41 @@ void gCanvas::drawSpecialAbility() {
     for (auto& special : specials) {
         gDrawCircle(special.centerx, special.centery, special.radius, false, 255);
     }
+}
+
+void gCanvas::setEndGameList() {
+	// Get Top Five
+	std::vector<std::pair<int, std::pair<int, int>>> topFive = root->getTopFiveScores();
+
+	// Edit texts.
+	endgamelist[0] = "Top 5";
+
+	for (int i = 0; i < END_GAME_LIST_NUMBER; i++) {
+	    if (topFive.size() <= i) {
+	        endgamelist[i + 1] = "0 / 0";
+	    } else {
+	        int id = topFive[i].first;
+	        int score = topFive[i].second.first;
+	        int gold = topFive[i].second.second;
+
+	        endgamelist[i + 1] = "Score: " + gToStr(score) + " / Total Gold: " + gToStr(gold);
+	    }
+	}
+}
+
+void gCanvas::controlScore() {
+	std::pair<int, int> newScoreGold = {player.score, player.totalgold};
+	root->updateLowestScores(newScoreGold);
+}
+
+void gCanvas::setMenu() {
+	root->onSceneChange();
+	menuCanvas* menu = new menuCanvas(root);
+	appmanager->setCurrentCanvas(menu);
+}
+
+void gCanvas::setGame() {
+	root->onSceneChange();
+	gCanvas* cnv = new gCanvas(root);
+	appmanager->setCurrentCanvas(cnv);
 }

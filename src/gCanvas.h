@@ -61,7 +61,7 @@ private:
 	static const int EXPLOSION_COLUMN = 4, EXPLOSION_ROW = 4;
 	static const int OWNER_PLAYER = 0, OWNER_ENEMY = 1;
 	static const int COL_PB = 0, COL_EB = 1, COL_PE = 2, COL_BB = 3, COL_D = 4;
-	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2, GAMESTATE_MARKET = 3, GAMESTATE_WARNING = 4, GAMESTATE_EXIT = 5, GAMESTATE_END_GAME = 6;
+	static const int GAMESTATE_PAUSE = 0, GAMESTATE_PLAY = 1, GAMESTATE_WAITFORNEXTLEVEL = 2, GAMESTATE_MARKET = 3, GAMESTATE_WARNING = 4, GAMESTATE_EXIT = 5, GAMESTATE_END_GAME = 6, GAMESTATE_WARNING_REPLAY = 7;
     static const int MARKET_HEALTH = 0, MARKET_DAMAGE = 1, MARKET_ATTACK_SPEED = 2, MARKET_GOLD_MULTIPLIER = 3, MARKET_BUFF_MULTIPLIER = 4;
 	static const int BUTTON_UNCLICK = 0, BUTTON_CLICK = 1;
     static const int WARNING_NOT_SELECTED = -1, WARNING_NO = 0, WARNING_YES = 1;
@@ -184,7 +184,6 @@ private:
 	void updateDrops();
 	void updateDifficultyMessage();
 	void updateSpecialAbility();
-	void updateGoldAnimation(Drop &drop);
 
 	void drawBackground();
 	void drawGameButtons();
@@ -225,12 +224,17 @@ private:
 	void increaseScore(int quantity);
 	void decreaseGold(int quantity);
 	void decreaseScore(int quantity);
-	void toggleSound();
-	void toggleMusic();
 
 	void calculateStar();
-	std::string createInsertStatement(const Player& player);
+	// Database
+	std::string saveData(const Player& player);
 	void loadGame(std::vector<int> data);
+	void setEndGameList();
+	void controlScore();
+
+	// Scenes
+	void setMenu();
+	void setGame();
 
 	gImage backgroundimage[2];
 	gImage playerimg[PLAYER_FRAME_COUNT];
@@ -248,7 +252,7 @@ private:
 	gImage energyfillimage;
 	gImage pausepanelimage;
 	gImage settingsbutton[2];
-    gImage warningimage;
+    gImage warningimage[3];
     gImage marketpanelimage;
     gImage marketslotimage;
     gImage marketclosebuttonimage;

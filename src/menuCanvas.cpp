@@ -21,7 +21,7 @@ void menuCanvas::setup() {
 	setupMenu();
 	setupButton();
 	setupContinuePanel();
-	isdead = root->getIsDead();
+	hasSave = root->saveControl();
 
 	root->soundManager(root->SOUND_MENU, 100, root->SOUND_TYPE_STARTING);
 }
@@ -75,13 +75,14 @@ void menuCanvas::mouseReleased(int x, int y, int button) {
 	if(buttongroup[0].pressed) {
 		buttongroup[0].pressed = false;
 		root->soundManager(root->SOUND_BUTTON, 100, root->SOUND_TYPE_ONHIT);
-		if(isdead.size() > 0) gamestate = GAMESTATE_WARNING;
+		gLogi("Game ") << hasSave;
+		if(hasSave) gamestate = GAMESTATE_WARNING;
 		else startGame();
 	}
 
 	if(gamestate == GAMESTATE_WARNING) {
 		if (warningbutton[WARNING_NO].pressed == true) {
-			deleteSave(isdead[0]);
+			root->resetSave();
 			warningbutton[WARNING_NO].pressed = false;
 			startGame();
 		}
@@ -145,7 +146,7 @@ void menuCanvas::setupMenu() {
 	player.x = 0;
 	player.y = (getHeight() - player.h) / 2;
 
-	isdead = root->getIsDead();
+	saveddata = root->getSavedData();
 	gamestate = GAMESTATE_START;
 
 	parallaxspeed = 5;
@@ -197,11 +198,6 @@ void menuCanvas::drawButton() {
 	}
 }
 
-void menuCanvas::soundTest(int soundnum) {
-	gLogi("Sound ") << soundnum;
-	root->soundManager(soundnum, 100, root->SOUND_TYPE_ONHIT);
-}
-
 void menuCanvas::setupContinuePanel() {
     warningimage.loadImage("gui/uyaricontinue.png");
 
@@ -245,15 +241,6 @@ void menuCanvas::setupContinuePanel() {
 
 void menuCanvas::drawContinuePanel() {
 	 if(gamestate == GAMESTATE_WARNING) warningimage.draw(warning.x, warning.y, warning.w, warning.h);
-}
-
-bool menuCanvas::saveControl() {
-	return true;
-}
-
-void menuCanvas::deleteSave(int id) {
-	std::string statement = "UPDATE Players SET isdead = 1 WHERE id = " + gToStr(id) + ";";
-	root->insertDatabase(statement);
 }
 
 void menuCanvas::startGame() {

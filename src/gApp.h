@@ -52,15 +52,17 @@ public:
 	// Database.
 	void insertDatabase(std::string insert);
 	void setupDatabase();
-	void getTopFiveScores();
 
+	bool saveControl();
+	void resetSave();
+	void endSave();
+	void saveDatas(std::vector<int> datas);
+	std::vector<std::pair<int, std::pair<int, int>>> getTopFiveScores();
+	std::vector<int> getSavedData();
+	void updateLowestScores(const std::pair<int, int>& newScoreGold);
 	float getTotalScore();
 	float getTotalGold();
 	float getPlayerDataNumber();
-
-	std::vector<std::string> getScore();
-	std::vector<std::string> getGold();
-	std::vector<int> getIsDead();
 
 private:
 	// Sound control.
@@ -92,6 +94,10 @@ private:
 	std::vector<std::string> datas;
 	std::vector<std::string> selectedData;
 	std::vector<int> saveddatas;
+
+	// New
+	void setPipes(std::string row);
+	int firstpipe, secondpipe, thirdpipe, fourthpipe, fifthpipe, sixthpipe, seventhpipe, eighthpipe, ninthpipe, tenthpipe, eleventhpipe;
 };
 
 #endif /* GAPP_H_ */

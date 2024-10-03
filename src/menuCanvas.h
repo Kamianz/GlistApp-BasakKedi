@@ -74,26 +74,22 @@ private:
 	gImage warningimage;
 
     gFont warningfont;
-	std::vector<int> isdead;
+	std::vector<int> saveddata;
 
 	float parallaxspeed;
+	bool hasSave;
 
 	void setupMenu();
-	void updateMenu();
-	void drawMenu();
-
 	void setupButton();
-	void updateButton();
-	void drawButton();
-
-
-    void soundTest(int soundnum);
-    int onhitsoundnum = 2;
-
     void setupContinuePanel();
+
+    void updateMenu();
+	void updateButton();
+
+	void drawMenu();
+	void drawButton();
     void drawContinuePanel();
-    bool saveControl();
-    void deleteSave(int id);
+
     void startGame();
 };
 
