@@ -538,6 +538,7 @@ void gCanvas::setupDrops() {
 	for(int i = 0; i < GOLD_FRAME_COUNT; i++) {
 		dropimage[DROP_GOLD][i].loadImage("golds/" + gToStr(i + 1) + ".png");
 	}
+	goldmaxwidth = dropimage[DROP_GOLD][0].getWidth();
 	for(int i = 0; i < POWER_BUFF_FRAME_COUNT; i++) {
 		dropimage[DROP_POWER_BUFF][i].loadImage("power_" + gToStr(i + 1) + ".png");
 	}
@@ -737,6 +738,7 @@ void gCanvas::updateDrops() {
         drop.h = dropimage[drop.id][drop.animframeno].getHeight();
         drop.w = dropimage[drop.id][drop.animframeno].getWidth();
 
+		drop.offsetX =  drop.x + (goldmaxwidth - drop.w) / 2;
         // Animation.
         if (drop.id == DROP_GOLD)
             animator(drop.animcounter, drop.animframeno, 0, GOLD_FRAME_COUNT - 1, 5);
@@ -744,9 +746,9 @@ void gCanvas::updateDrops() {
             animator(drop.animcounter, drop.animframeno, 0, POWER_BUFF_FRAME_COUNT - 1, 5);
 
         // Collision control.
-        drop.iscollide = checkCollision(drop.x, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
+        drop.iscollide = checkCollision(drop.offsetX, drop.y, drop.w, drop.h, COL_D, 0, drop.id);
 
-        if (drop.iscollide || (drop.x + drop.w) < mapleft) {
+        if (drop.iscollide || (drop.offsetX + drop.w) < mapleft) {
             activedrops.erase(activedrops.begin() + i);
             i--;
         }
@@ -811,7 +813,29 @@ void gCanvas::updateBullet() {
             }
         }
 
-        bullet.ishit = checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_BB, 0, bullet.id);
+        for (int j = 0; j < activebullets.size(); j++) {
+            if (i != j && bullet.owner != activebullets[j].owner) {
+                Bullet& otherBullet = activebullets[j];
+
+                if (checkCollision(bullet.x, bullet.y, bullet.w, bullet.h, COL_BB, otherBullet.damage, bullet.id)) {
+                    if (bullet.damage > otherBullet.damage) {
+                        bullet.damage -= otherBullet.damage;
+                        activebullets.erase(activebullets.begin() + j);
+                        j--;
+                    } else if (bullet.damage < otherBullet.damage) {
+                        otherBullet.damage -= bullet.damage;
+                        activebullets.erase(activebullets.begin() + i);
+                        i--;
+                        break;
+                    } else {
+                        activebullets.erase(activebullets.begin() + i);
+                        activebullets.erase(activebullets.begin() + j);
+                        i--;
+                        break;
+                    }
+                }
+            }
+        }
 
         if (bullet.ishit || bullet.x > getWidth() || (bullet.x + bullet.w) < mapleft) {
             activebullets.erase(activebullets.begin() + i);
@@ -890,11 +914,10 @@ void gCanvas::drawDrops() {
 	for(int i = 0; i < activedrops.size(); i++) {
 		Drop &drop = activedrops[i];
 
-	    int offsetX = drop.w / 2;
-	    int drawX = drop.x + offsetX;
 
-	    int drawY = drop.y + drop.offsetY;
-		dropimage[drop.id][drop.animframeno].draw(drop.x + drawX, drop.y, drop.w, drop.h);
+
+		dropimage[drop.id][drop.animframeno].draw(drop.offsetX, drop.y, drop.w, drop.h);
+		gDrawRectangle(drop.offsetX, drop.y, drop.w, drop.h, false);
 	}
 }
 
@@ -1532,7 +1555,7 @@ void gCanvas::drawDifficultyMessage() {
 }
 void gCanvas::activateSpecialAbility() {
     special.radius = player.w / 2;
-    special.maxradius = 2000;
+    special.maxradius = getWidth() - player.x - special.radius;
     special.centerx = player.x + (player.w / 2);
     special.centery = player.y + (player.h / 2);
     special.active = true;

@@ -118,11 +118,12 @@ private:
 
 	struct Drop {
 	    int id; // Drop türü
-	    int x, y; // X ve Y koordinatlarý
-	    int w, h; // Geniþlik ve yükseklik
+	    float x, y; // X ve Y koordinatlarý
+	    float w, h; // Geniþlik ve yükseklik
 	    float speed; // Hýz (float kullanmak daha pürüzsüz hareket saðlar)
 	    int animcounter, animframeno; // Animasyon sayacý ve çerçevesi
 	    bool iscollide; // Çarpýþma durumu
+	    float offsetX;
 	    float offsetY; // Dikey dalgalanma için ek offset
 	};
 
@@ -289,6 +290,7 @@ private:
 	std::vector<int> saveddata;
 
     bool powerup;
+    float goldmaxwidth;
     int testcounter;
     float poweruptimes, poweruptimer;
 	float backgroundspeed;
